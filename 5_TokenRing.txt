@@ -1,0 +1,914 @@
+import threading
+import time
+import random
+
+class TokenRing:
+    def __init__(self, num_processes):
+        self.num_processes = num_processes
+        self.token = True  # Token initially with process 0
+        self.current_holder = 0
+        self.lock = threading.Lock()  # Protects shared token state across threads.
+        self.running = True
+
+    def critical_section(self, process_id):
+        print(f"Process {process_id} ENTERING critical section.")
+        time.sleep(random.uniform(1, 2))  # Simulate work
+        print(f"Process {process_id} EXITING critical section.")
+
+    def request_token(self, process_id):
+        while self.running:
+            # Critical check/update of token ownership is done atomically.
+            with self.lock:
+                if self.current_holder == process_id and self.token:
+                    # Only token holder can enter CS, enforcing mutual exclusion.
+                    self.critical_section(process_id)
+                    self.token = False  # Mark token as consumed by current holder.
+                    # Pass token to next process in logical ring order.
+                    self.current_holder = (process_id + 1) % self.num_processes
+                    self.token = True  # Token becomes available for next holder.
+            # Small pause prevents busy-waiting and makes output readable.
+            time.sleep(1)
+
+    def start(self):
+        threads = []
+        for i in range(self.num_processes):
+            # One thread per process to simulate concurrent distributed nodes.
+            t = threading.Thread(target=self.request_token, args=(i,))
+            threads.append(t)
+            t.start()
+
+        try:
+            while True:
+                time.sleep(0.1)
+        except KeyboardInterrupt:
+            self.running = False
+            print("\nStopping simulation...")
+            for t in threads:
+                t.join()
+
+if __name__ == "__main__":
+    ring = TokenRing(num_processes=5)
+    ring.start()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+# Distributed Systems Practicals - Token Ring Algorithm Solutions
+
+## 📌 FOLDER 5: Token Ring Election & Mutual Exclusion Algorithm
+
+---
+
+## 🎓 ORAL EXAM QUESTIONS WITH ANSWERS
+
+### Basic Level Questions
+
+1. **What is a leader election in distributed systems and why is it needed?**
+   
+   **Answer**:
+   Leader election is process of dynamically electing one process as coordinator/master.
+   
+   Why needed:
+   - **Centralized decisions**: Only one master can make critical decisions
+   - **Distributed resource management**: Lock manager, cache manager (needs one authority)
+   - **Single point of agreement**: Consensus requires designated coordinator
+   - **Fault tolerance**: If master dies, elect new one automatically
+   - **Prevents split-brain**: Multiple masters can cause inconsistency
+   
+   Real-world examples:
+   - Database replication (elect primary)
+   - Cluster management (elect cluster head)
+   - Distributed locks (elect lock manager)
+
+2. **What is the Token Ring Algorithm?**
+   
+   **Answer**:
+   Token Ring is an algorithm where:
+   - Processes form a logical ring topology
+   - **Token** (special message) passes around the ring
+   - Only process holding token can enter critical section
+   - Token circulates continuously
+   - Used for both leader election and mutual exclusion
+   
+   Key characteristics:
+   - **Decentralized**: No central server
+   - **Fair**: Token passes sequentially to each process
+   - **Simple**: Token = permission, straightforward logic
+   - **Scalable**: Works with many processes
+
+3. **How does the Token Ring Algorithm work?**
+   
+   **Answer**:
+   Process flow:
+   ```
+   Process 0 ─ token ─→ Process 1 ─ token ─→ Process 2
+       ↑                                          │
+       └──────── token ──────────────────────────┘
+                    Ring topology
+   ```
+   
+   At each process:
+   1. **Waiting**: Process waits for token arrival
+   2. **Critical Section**: Once token arrives, enter
+   3. **Do Work**: Execute protected code
+   4. **Pass Token**: Pass token to next process
+   5. **Repeat**: Go back to waiting
+   
+   Token flow example (4 processes):
+   ```
+   T=0: P0 has token, P1/P2/P3 waiting
+   T=1: P0 done, passes to P1. P1 enters critical section
+   T=2: P1 done, passes to P2. P2 enters critical section
+   T=3: P2 done, passes to P3. P3 enters critical section
+   T=4: P3 done, passes to P0. Back to start
+   ```
+
+4. **What is the difference between Token Ring for mutual exclusion vs leader election?**
+   
+   **Answer**:
+   **For Mutual Exclusion**:
+   - Token = Permission to critical section
+   - Holder of token executes protected code
+   - Only one process has token → Only one in CS
+   - Passes token after work complete
+   - Goal: Prevent concurrent access
+   
+   **For Leader Election**:
+   - Token carries candidate IDs (all process IDs)
+   - Each process marks its own ID on token
+   - At end of ring, highest ID wins
+   - Goal: Elect single leader/master
+   
+   Same ring structure, different use case.
+
+5. **How is a process's position determined in the Token Ring?**
+   
+   **Answer**:
+   In logical ring topology:
+   ```
+   Process Ring: P0 → P1 → P2 → P3 → ... → Pn → P0
+   
+   Each process knows:
+   - Its position (rank or ID)
+   - Next process: (rank + 1) % num_processes
+   - Previous process: (rank - 1 + num_processes) % num_processes
+   ```
+   
+   Configuration example (5 processes):
+   ```
+   Process 0: next = 1, prev = 4
+   Process 1: next = 2, prev = 0
+   Process 2: next = 3, prev = 1
+   Process 3: next = 4, prev = 2
+   Process 4: next = 0, prev = 3
+   ```
+   
+   Ring is circular: last process connects to first.
+
+---
+
+### Intermediate Level Questions
+
+6. **What are the requirements for a process holding the Token Ring token?**
+   
+   **Answer**:
+   Token holder responsibilities:
+   
+   1. **Execute Critical Section Atomically**:
+      - Only process in critical section
+      - No other process can execute simultaneously
+      - Complete work before passing token
+   
+   2. **Modify Shared State Exclusively**:
+      - Exclusive write access to shared data
+      - Read access to all data
+      - No concurrent modifications
+   
+   3. **Pass Token Promptly**:
+      - After done, send token immediately
+      - Don't hold token unnecessarily
+      - Timely passing ensures fairness
+   
+   4. **Maintain Token Integrity**:
+      - Token must be valid/uncorrupted
+      - Don't modify token improperly
+      - Detect and handle token loss
+   
+   5. **Handle Failures**:
+      - If process crashes while holding token
+      - Token is lost (deadlock!)
+      - Need timeout and recovery
+
+7. **Explain the request/release protocol for Token Ring mutual exclusion.**
+   
+   **Answer**:
+   Protocol has two phases:
+   
+   **Phase 1: Request**:
+   ```
+   1. Process wants critical section
+   2. Adds name to REQUEST QUEUE (not token queue)
+   3. Waits for token
+   4. When token arrives, checks request queue
+   5. If own name in queue, enters CS
+   6. Otherwise, passes token to next
+   ```
+   
+   **Phase 2: Release**:
+   ```
+   1. Process exits critical section
+   2. Removes name from request queue
+   3. Passes token to next process in ring
+   4. Next process checks request queue
+   5. If their name in queue, they enter CS
+   ```
+   
+   Example with 3 processes:
+   ```
+   T=0: P0 wants CS (queue=[P0]), receives token
+   T=1: P0 in CS, P1 wants CS (queue=[P0,P1])
+   T=2: P0 exits (queue=[P1]), passes token to P1
+   T=3: P1 enters CS, P0 wants again (queue=[P0,P1])
+   T=4: P1 exits (queue=[P0,P1]), passes to P2
+   ```
+
+8. **How does Token Ring prevent deadlock?**
+   
+   **Answer**:
+   Deadlock properties:
+   - **Circular wait**: Token circulates → No wait cycle
+   - **Mutual exclusion**: Needed for correctness
+   - **Hold and wait**: Not applicable (CS is atomic)
+   - **No preemption**: Token always eventually released
+   
+   Why no deadlock:
+   ```
+   1. Only ONE token exists
+   2. Token circulates continuously
+   3. Every process gets token eventually
+   4. No process can hold token indefinitely
+   5. Therefore: Deadlock impossible
+   ```
+   
+   BUT: **Token loss causes livelock!**
+   ```
+   If process crashes while holding token:
+   ├─ Token lost
+   ├─ No other process can enter CS
+   └─ System hangs (not deadlock, livelock)
+   
+   Solution: Timeout and token regeneration
+   ```
+
+9. **What is the fairness property of Token Ring?**
+   
+   **Answer**:
+   Fairness definition:
+   - All processes eventually enter critical section
+   - No starvation (no process waits infinitely)
+   - Requests honored in order
+   
+   Token Ring fairness:
+   ```
+   Strong fairness: YES
+   ├─ Every process that requests gets token
+   ├─ In round-robin order
+   ├─ Bounded wait time (max n-1 passes)
+   └─ If process with request on queue, it will get token
+   ```
+   
+   Wait time analysis:
+   ```
+   For process Pi requesting CS:
+   - Token at Pi: wait = 0
+   - Token at Pi+1: wait = other processes' times
+   - Token at Pi-1: wait = (n-1) * max_CS_time
+   
+   Maximum wait: (n-1) * max_CS_time + communication delay
+   ```
+   
+   This guarantees starvation-free access.
+
+10. **How would you compare Token Ring with other mutual exclusion algorithms?**
+    
+    **Answer**:
+    
+    | Property | Token Ring | Bully | Lamport Queue |
+    |----------|------------|-------|---------------|
+    | **Complexity** | O(n) | O(n²) | O(n) |
+    | **Messages** | n per CS | O(n²) per election | n log n |
+    | **Fairness** | Strong | No starvation | FIFO order |
+    | **Deadlock** | Token loss | Byzantine failure | None |
+    | **Implementation** | Simple ring | Election based | Queue on server |
+    | **Performance** | Fair delays | Immediate (sometimes) | Ordered access |
+    
+    Token Ring advantages:
+    - Simple to understand and implement
+    - Strong fairness guarantee
+    - No central server needed
+    
+    Token Ring disadvantages:
+    - Token loss causes livelock
+    - Latency increases with process count
+    - Ring topology assumption required
+
+---
+
+### Advanced Level Questions
+
+11. **How would you detect and recover from token loss in Token Ring?**
+    
+    **Answer**:
+    Token loss detection:
+    
+    ```python
+    # Each process maintains timeout
+    timeout = 2 * max_token_circulation_time
+    
+    while True:
+        token_received = wait_for_token(timeout)
+        
+        if token_received:
+            execute_critical_section()
+            send_token_to_next()
+            reset_timeout()
+        else:
+            # Timeout: token lost!
+            detect_token_loss()
+    ```
+    
+    Recovery mechanism:
+    
+    ```python
+    def handle_token_loss():
+        if rank == 0:  # Process 0 is recovery manager
+            # Generate new token
+            new_token = Token()
+            send_token(new_token, next_process)
+        else:
+            # Wait for token from Process 0
+            wait_for_recovery()
+    ```
+    
+    Better approach: **Election-based recovery**:
+    ```
+    1. Token timeout detected
+    2. Processes initiate leader election
+    3. Elected leader generates new token
+    4. Resume normal operation
+    ```
+    
+    Challenges:
+    - Distinguishing real loss from network delay
+    - Coordinating recovery among multiple processes
+    - Preventing duplicate tokens
+
+12. **Design a Token Ring system that supports dynamic node joining.**
+    
+    **Answer**:
+    Requirement: New process joins ring at runtime
+    
+    Current ring: P0 → P1 → P2 → P0
+    New process P3 joins between P1 and P2
+    New ring: P0 → P1 → P3 → P2 → P0
+    
+    Algorithm:
+    ```
+    1. New process P3 announces itself
+    2. Current ring members re-coordinate
+    3. P1's next pointer: P0→P1→P2 changes to P0→P1→P3
+    4. P3's next pointer: P3→P2
+    5. Synchronize all processes
+    6. Resume token circulation
+    ```
+    
+    Implementation:
+    ```python
+    def add_new_process(rank, num_processes):
+        next_rank = (rank + 1) % num_processes
+        prev_rank = (rank - 1 + num_processes) % num_processes
+        
+        # Register with other processes
+        broadcast("NEW_PROCESS", rank)
+        
+        # Receive acknowledgments
+        for _ in range(num_processes):
+            ack = receive_message()
+        
+        # Join the ring
+        next_process = connect_to(next_rank)
+        prev_process = connect_to(prev_rank)
+    ```
+    
+    Challenges:
+    - Token circulation during join
+    - Synchronizing all processes
+    - Ensuring ring integrity
+
+13. **Explain fair starvation analysis for Token Ring.**
+    
+    **Answer**:
+    Starvation definition: Process never gets CS access
+    
+    Token Ring starvation analysis:
+    ```
+    Does starvation occur? NO
+    
+    Proof:
+    1. Only n processes in ring
+    2. Token circulates: P0→P1→...→Pn→P0
+    3. Every process gets token exactly once per round
+    4. If process requested, it will be in request queue
+    5. When token arrives, process enters CS
+    6. Therefore: No starvation
+    ```
+    
+    Worst-case wait time:
+    ```
+    Process Pi requests CS at time T
+    
+    Case 1: Token at Pi (best case)
+    - Wait = 0 (immediate)
+    
+    Case 2: Token at Pi+1 (worst case)
+    - Token must complete (n-1) full rounds
+    - Each process holds CS for max_time
+    - Total wait = (n-1) * n * max_hold_time
+    ```
+    
+    Fairness guarantee:
+    ```
+    FIFO ordering: Yes
+    ├─ Requests processed in order
+    ├─ Fair allocation
+    └─ No priority differences
+    ```
+
+14. **How would you implement Priority-based Token Ring?**
+    
+    **Answer**:
+    Goal: High-priority processes get token first
+    
+    Simple approach:
+    ```python
+    class TokenRing:
+        def __init__(self, rank, num_processes):
+            self.rank = rank
+            self.priority = 0  # Default priority
+            self.request_queue = []  # Priority queue
+        
+        def request_critical_section(self, priority):
+            self.request_queue.append((priority, self.rank))
+            self.request_queue.sort(reverse=True)  # Sort by priority
+        
+        def process_token(self, token):
+            if self.request_queue:
+                priority, rank = self.request_queue.pop(0)
+                if rank == self.rank:
+                    self.enter_critical_section()
+            self.pass_token()
+    ```
+    
+    Comparison with regular Token Ring:
+    ```
+    Regular:  FIFO - fair but slow for urgent requests
+    Priority: Urgent first - fast for important but less fair
+    
+    Trade-off: Fairness vs responsiveness
+    ```
+    
+    Issues with priority:
+    - Low-priority processes may starve
+    - Requires careful priority assignment
+    - More complex implementation
+
+15. **Design a Byzantine-fault-tolerant Token Ring.**
+    
+    **Answer**:
+    Challenge: Faulty processes may lose or corrupt token
+    
+    Solution: Redundant tokens and verification
+    
+    ```python
+    class ByzantineTokenRing:
+        def __init__(self):
+            self.token_history = {}  # Track tokens
+            self.checksum = 0
+        
+        def verify_token(self, token):
+            # Verify token not tampered
+            if not self.validate_checksum(token):
+                token = self.request_new_token()
+            return token
+        
+        def handle_faulty_process(self, rank):
+            # Skip faulty process in ring
+            self.ring.remove(rank)
+            # Reorganize ring
+            self.reorganize_ring()
+    ```
+    
+    Key mechanisms:
+    - **Token replication**: Multiple copies circulating
+    - **Checksums**: Verify token not modified
+    - **Voting**: Majority agreement on token validity
+    - **Exclusion**: Remove faulty processes from ring
+
+---
+
+### Scenario-Based Questions
+
+16. **Implement Token Ring for Mutual Exclusion with thread safety.**
+    
+    **Answer**:
+    Python implementation with threading:
+    
+    ```python
+    import threading
+    import queue
+    
+    class TokenRing:
+        def __init__(self, rank, size):
+            self.rank = rank
+            self.size = size
+            self.next_rank = (rank + 1) % size
+            self.prev_rank = (rank - 1 + size) % size
+            
+            self.has_token = (rank == 0)  # Process 0 starts
+            self.lock = threading.Lock()
+            self.condition = threading.Condition(self.lock)
+            self.token_queue = queue.Queue()
+            
+            self.thread = threading.Thread(target=self.run)
+            self.thread.daemon = True
+            self.thread.start()
+        
+        def request_cs(self):
+            """Request critical section access"""
+            with self.condition:
+                while not self.has_token:
+                    self.condition.wait()  # Wait for token
+                self.has_token = False
+        
+        def release_cs(self):
+            """Release critical section"""
+            with self.condition:
+                self.has_token = True
+                self.condition.notify_all()
+                self.pass_token()
+        
+        def pass_token(self):
+            """Pass token to next process"""
+            print(f"Process {self.rank} passing token to {self.next_rank}")
+            # Send to next_rank via network/queue
+        
+        def receive_token(self):
+            """Receive token from previous process"""
+            with self.condition:
+                self.has_token = True
+                self.condition.notify_all()
+        
+        def run(self):
+            """Main event loop"""
+            while True:
+                if self.has_token:
+                    # Do work in critical section
+                    print(f"Process {self.rank} in critical section")
+                    threading.Event().wait(timeout=0.1)  # Simulate work
+                    self.release_cs()
+                else:
+                    threading.Event().wait(timeout=0.1)
+    ```
+
+17. **Design Token Ring Election Algorithm for finding leader.**
+    
+    **Answer**:
+    Token carries all process IDs, highest becomes leader:
+    
+    ```python
+    class TokenRingElection:
+        def __init__(self, rank, size):
+            self.rank = rank
+            self.size = size
+            self.token = None  # Contains list of process IDs
+            self.elected_leader = None
+        
+        def start_election(self):
+            """Initiate election"""
+            if self.rank == 0:
+                # Process 0 starts with token
+                self.token = [self.rank]  # Initialize token
+            
+            self.circulate_token()
+        
+        def circulate_token(self):
+            """Circulate token around ring"""
+            if self.token is None:
+                # Receive token from previous
+                self.token = self.receive_from_prev()
+            
+            # Add own ID if not already present
+            if self.rank not in self.token:
+                self.token.append(self.rank)
+            
+            print(f"Process {self.rank}: token = {self.token}")
+            
+            # Pass to next
+            next_rank = (self.rank + 1) % self.size
+            self.send_to(next_rank, self.token)
+            
+            # When token returns to starter
+            if self.rank == 0 and len(self.token) == self.size:
+                # Election complete
+                self.elected_leader = max(self.token)
+                print(f"Leader elected: Process {self.elected_leader}")
+    ```
+    
+    Execution example (3 processes):
+    ```
+    T=0: P0 starts: token = [0]
+    T=1: P1 receives: token = [0, 1], passes to P2
+    T=2: P2 receives: token = [0, 1, 2], passes to P0
+    T=3: P0 receives back: token = [0, 1, 2]
+         All IDs collected, max(token) = 2
+         Process 2 is leader!
+    ```
+
+18. **What happens if a process crashes in the middle of Token Ring?**
+    
+    **Answer**:
+    Scenario: Process P1 crashes while holding token
+    
+    ```
+    Before crash: P0 → P1 → P2 → P3 → P0
+    
+    After crash:
+    P0 sends to P1: No response
+    P0 timeout: P1 is down
+    P0 reorganizes: P0 → P2 → P3 → P0
+    ```
+    
+    Recovery protocol:
+    
+    ```python
+    def handle_crash(crashed_rank):
+        # Remove from ring
+        new_ring = [r for r in self.ring if r != crashed_rank]
+        
+        # Notify all processes
+        broadcast("RING_UPDATE", new_ring)
+        
+        # Update next pointers
+        for rank in new_ring:
+            next_rank = new_ring[(new_ring.index(rank) + 1) % len(new_ring)]
+            update_routing(rank, next_rank)
+        
+        # If crashed process had token, recover
+        if crashed_rank == self.token_holder:
+            self.regenerate_token()
+    ```
+    
+    Challenges:
+    - Detecting crash (timeout mechanism)
+    - Token might be lost (need recovery)
+    - Coordinating ring reorganization
+    - Ensuring consistency during recovery
+
+19. **Compare Token Ring with FIFO Queue-based Mutual Exclusion.**
+    
+    **Answer**:
+    
+    | Aspect | Token Ring | FIFO Queue |
+    |--------|-----------|-----------|
+    | **Central Server** | No | Yes (queue manager) |
+    | **Messages per CS** | n (token circulation) | 3 (request, grant, release) |
+    | **Fairness** | Strong FIFO | Strong FIFO |
+    | **Single Point of Failure** | No | Yes (server) |
+    | **Latency** | O(n) avg | O(1) |
+    | **Scalability** | Better for large n | Better for small n |
+    | **Implementation** | Distributed | Centralized |
+    
+    Token Ring advantages:
+    - Decentralized, fault-tolerant
+    - Fair for many processes
+    
+    FIFO Queue advantages:
+    - Simple centralized approach
+    - Fast access (O(1) vs O(n))
+    - No token loss risk
+    
+    When to use:
+    - Token Ring: Distributed systems, large clusters
+    - FIFO Queue: Shared memory, manageable loads
+
+20. **Design an optimized Token Ring for a large cluster (1000 processes).**
+    
+    **Answer**:
+    Challenge: With 1000 processes, token takes too long to circulate
+    
+    Solution 1: **Hierarchical Token Ring**
+    ```
+    Level 1: 10 groups of 100 processes
+    Level 2: Token circulates between groups
+    Level 3: Within group, separate token ring
+    
+    Process waits at most: 10*100 + 10 = 1010 steps
+    (vs 1000 with flat ring)
+    ```
+    
+    Solution 2: **Multiple Tokens**
+    ```
+    Instead of 1 token: k independent tokens
+    Each token controls 1/k of processes
+    
+    Multiple processes can be in CS simultaneously
+    Trade-off: Less mutual exclusion, more parallelism
+    ```
+    
+    Solution 3: **Adaptive Token Ring**
+    ```
+    Monitor token circulation time
+    If too slow: Dynamically create sub-rings
+    If fast enough: Keep as is
+    
+    Adapts to system load
+    ```
+    
+    Recommended approach for 1000 processes:
+    ```
+    1. Use hierarchical structure (5-10 levels)
+    2. One token per level
+    3. Process waits: height of tree * width
+    4. Trade-off: Balance between latency and fairness
+    ```
+
+'''

@@ -1,0 +1,2279 @@
+// Calculator.idl
+
+module CalculatorApp {
+
+    exception DivisionByZero {};
+    interface Calculator {
+        float add(in float a, in float b);
+        float subtract(in float a, in float b);
+        float multiply(in float a, in float b);
+        float divide(in float a, in float b) raises(DivisionByZero);
+    };
+
+    
+};
+
+
+//CalculatorClient.java
+
+import CalculatorApp.*;
+import org.omg.CORBA.*;
+import org.omg.CosNaming.*;
+
+public class CalculatorClient {
+    public static void main(String args[]) {
+        try {
+            // Initialize ORB
+            ORB orb = ORB.init(args, null);
+
+            // Get reference to Naming Service
+            org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
+            NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+
+            // Resolve Calculator object
+            Calculator calculator = CalculatorHelper.narrow(ncRef.resolve_str("Calculator"));
+
+            // Perform operations
+            System.out.println("Addition (10 + 5): " + calculator.add(10, 5));
+            System.out.println("Subtraction (10 - 5): " + calculator.subtract(10, 5));
+            System.out.println("Multiplication (10 * 5): " + calculator.multiply(10, 5));
+
+            try {
+                System.out.println("Division (10 / 2): " + calculator.divide(10, 2));
+                System.out.println("Division (10 / 0): " + calculator.divide(10, 0)); // Should raise exception
+            } catch (DivisionByZero e) {
+                System.out.println("Error: Division by zero is not allowed!");
+            }
+
+        } catch (Exception e) {
+            System.err.println("Client exception: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
+
+
+
+//CalculatorServer.java
+
+import CalculatorApp.*;
+import org.omg.CORBA.*;
+import org.omg.CosNaming.*;
+import org.omg.PortableServer.*;
+
+class CalculatorImpl extends CalculatorPOA {
+    private ORB orb;
+
+    public void setORB(ORB orb_val) {
+        orb = orb_val;
+    }
+
+    public float add(float a, float b) {
+        return a + b;
+    }
+
+    public float subtract(float a, float b) {
+        return a - b;
+    }
+
+    public float multiply(float a, float b) {
+        return a * b;
+    }
+
+    public float divide(float a, float b) throws DivisionByZero {
+        if (b == 0) throw new DivisionByZero();
+        return a / b;
+    }
+}
+
+public class CalculatorServer {
+    public static void main(String args[]) {
+        try {
+            // Initialize ORB
+            ORB orb = ORB.init(args, null);
+            
+            // Get reference to RootPOA and activate POA Manager
+            POA rootpoa = POAHelper.narrow(orb.resolve_initial_references("RootPOA"));
+            rootpoa.the_POAManager().activate();
+
+            // Create servant and register it with ORB
+            CalculatorImpl calculator = new CalculatorImpl();
+            calculator.setORB(orb);
+            org.omg.CORBA.Object ref = rootpoa.servant_to_reference(calculator);
+            Calculator href = CalculatorHelper.narrow(ref);
+
+            // Bind object to Naming Service
+            org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
+            NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+            NameComponent path[] = ncRef.to_name("Calculator");
+            ncRef.rebind(path, href);
+
+            System.out.println("Calculator Server is running...");
+            orb.run();
+        } catch (Exception e) {
+            System.err.println("Server exception: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
+
+
+
+RUN:
+
+
+// Run on java 1.8 version
+
+// java -version
+// idlj -fall Calculator.idl
+// javac CalculatorApp/*.java *.java
+// orbd -ORBInitialPort 1050 -ORBInitialHost localhost
+
+// new terminal
+// java CalculatorServer -ORBInitialPort 1050 -ORBInitialHost localhost
+
+// new terminal
+// java CalculatorClient -ORBInitialPort 1050 -ORBInitialHost localhost
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Library / Package	Usage
+CalculatorApp.*	Imports generated CORBA classes from IDL file
+org.omg.CORBA.*	Provides CORBA core functionalities like ORB
+org.omg.CosNaming.*	Used for CORBA Naming Service operations
+org.omg.PortableServer.*	Used to create and manage CORBA server objects (POA)
+Important Classes Used
+Class	Usage
+ORB	Initializes and manages CORBA communication
+NamingContextExt	Used to access Naming Service
+NamingContextExtHelper	Used to convert generic CORBA object into NamingContextExt
+CalculatorHelper	Used to narrow CORBA object references into Calculator objects
+POA	Portable Object Adapter used to manage server objects
+POAHelper	Used to narrow RootPOA reference
+CalculatorPOA	Skeleton class generated from IDL for server implementation
+NameComponent	Represents names in CORBA Naming Service
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+# Distributed Systems Practicals - CORBA Solutions & Documentation
+
+## 📌 FOLDER 2: CORBA (Common Object Request Broker Architecture)
+
+---
+
+## 🎓 ORAL EXAM QUESTIONS WITH ANSWERS
+
+### Basic Level Questions
+1. **What is CORBA and why is it important in distributed systems?**
+   
+   **Answer**:
+   CORBA (Common Object Request Broker Architecture) is a standard for distributed object computing:
+   - Enables objects written in different languages to communicate
+   - Platform and OS independent
+   - Standardized by OMG (Object Management Group)
+   - Allows C++, Java, Python, C# objects to interoperate seamlessly
+   
+   Importance:
+   - Solves heterogeneous system integration problem
+   - Enterprise-grade reliability (proven in telecom, finance)
+   - Single unified interface regardless of language/platform
+   - Legacy system integration capability
+
+2. **What is the main advantage of CORBA over RMI?**
+   
+   **Answer**:
+   **Main Advantage: Language Independence**
+   ```
+   RMI: Java ←→ Java only
+   CORBA: Java ←→ C++ ←→ Python ←→ C# (any language with CORBA binding)
+   ```
+   
+   Specific advantages:
+   - Can write server in C++, client in Java, both work seamlessly
+   - Ideal for heterogeneous enterprises
+   - Single standard interface (IDL) across languages
+   - Large existing CORBA systems to integrate with
+   
+   CORBA also:
+   - Platform independent (Windows/Linux/Unix/mainframe)
+   - Hierarchical naming service (vs flat RMI registry)
+   - More mature (longer track record)
+
+3. **What is IDL (Interface Definition Language)?**
+   
+   **Answer**:
+   IDL is a language-neutral specification for interfaces:
+   - Separate from any programming language
+   - Defines method signatures, parameters, return types, exceptions
+   - Compiler generates language-specific code (stubs, skeletons)
+   - Single IDL can generate Java, C++, Python implementations
+   
+   Example:
+   ```idl
+   interface Calculator {
+       float add(in float a, in float b);
+       float divide(in float a, in float b) raises(DivisionByZero);
+   };
+   ```
+   
+   Why separate?
+   - Ensures interoperability (common contract)
+   - Compiler verifies consistency across languages
+   - Forces explicit interface design
+   - Enables code generation
+
+4. **What are the key components of CORBA architecture?**
+   
+   **Answer**:
+   1. **ORB** (Object Request Broker): Middleware that handles communication
+   2. **Stubs**: Client-side proxies (generated from IDL)
+   3. **Skeletons**: Server-side proxies (generated from IDL)
+   4. **POA** (Portable Object Adapter): Manages server-side objects
+   5. **Naming Service**: Directory service for finding objects
+   6. **Interface Repository**: Stores interface definitions
+   7. **GIOP/IIOP**: Protocol for inter-ORB communication
+   8. **IDL Compiler**: Generates language-specific files
+   
+   These work together to enable transparent distributed communication.
+
+5. **What is an ORB (Object Request Broker)?**
+   
+   **Answer**:
+   ORB is the communication middleware in CORBA:
+   - Creates and manages object references
+   - Routes method requests from client to server
+   - Handles marshalling/unmarshalling (using CDR format)
+   - Uses IIOP protocol for network communication
+   - Manages object lifecycle
+   
+   Process:
+   ```
+   Client stub → ORB → Network (IIOP) → Server ORB → Skeleton → Servant
+   ```
+   
+   ORB initialization:
+   ```java
+   ORB orb = ORB.init(args, null);
+   ```
+   After this, ORB handles all communication details.
+
+### Intermediate Level Questions
+6. **Explain the difference between CORBA and RMI.**
+   
+   **Answer**:
+   | Feature | CORBA | RMI |
+   |---------|-------|-----|
+   | **Language Support** | Multi-language (C++, Java, Python, C#) | Java only |
+   | **Platform** | Any OS (Windows, Linux, Unix, mainframe) | Any JVM (OS-independent via Java) |
+   | **Interface** | IDL (separate, compiled) | Java interface (built-in) |
+   | **Learning Curve** | Steep (IDL, compilation, ORB) | Easy (looks like Java) |
+   | **Scalability** | 100s-1000s of objects | 10s-100s objects |
+   | **Performance** | Slower (complex protocol) | Faster (simplified) |
+   | **Ideal For** | Heterogeneous enterprises | Java systems |
+   | **Industry** | Legacy, finance, telecom | Web services (declining) |
+
+7. **What is the Naming Service in CORBA? How is it different from RMI Registry?**
+   
+   **Answer**:
+   **Naming Service**:
+   - Hierarchical directory (like file system)
+   - Can have nested contexts (Services/Banking/Accounts)
+   - More flexible than flat structure
+   - Standardized by CORBA spec
+   
+   **RMI Registry**:
+   - Flat namespace (just name → object)
+   - Cannot have hierarchies
+   - Simpler but less scalable
+   - Java-specific
+   
+   Example:
+   ```
+   CORBA:
+   /CORBAservices/NamingService/Accounts/Checking123
+   
+   RMI:
+   rmi://localhost/CheckingAccount123
+   ```
+   
+   CORBA better for large systems with hierarchical organization.
+
+8. **What is POA (Portable Object Adapter)?**
+   
+   **Answer**:
+   POA manages server-side objects:
+   - Converts servants (implementation objects) to CORBA references
+   - Routes incoming requests to correct servant
+   - Manages object lifecycle (creation, activation, deactivation)
+   - Provides portability across ORB implementations
+   
+   Key operations:
+   ```java
+   POA rootpoa = POAHelper.narrow(orb.resolve_initial_references("RootPOA"));
+   rootpoa.the_POAManager().activate();  // Activate POA
+   Object ref = rootpoa.servant_to_reference(servant);  // Convert servant
+   ```
+   
+   Why important:
+   - Enables same code on different ORBs
+   - Automatic stub/skeleton handling
+   - Request dispatching mechanism
+
+9. **Explain the IDL compilation process. What files are generated?**
+   
+   **Answer**:
+   Process:
+   ```bash
+   idlj -fall Calculator.idl
+   # Generates:
+   ```
+   
+   Generated files:
+   ```
+   CalculatorApp/
+   ├─ Calculator.java      (Remote interface - you implement this)
+   ├─ CalculatorPOA.java   (Server skeleton base class - abstract)
+   ├─ CalculatorHelper.java (Utility for type narrowing)
+   └─ CalculatorHolder.java (For output parameters)
+   ```
+   
+   You write:
+   ```java
+   class CalculatorImpl extends CalculatorPOA {
+       public float add(float a, float b) { ... }
+       // Implement all abstract methods
+   }
+   ```
+   
+   Then compile:
+   ```bash
+   javac CalculatorApp/*.java *.java
+   ```
+
+10. **What is the purpose of `ORB.init()` in CORBA?**
+    
+    **Answer**:
+    `ORB.init()` initializes the CORBA Object Request Broker:
+    ```java
+    ORB orb = ORB.init(args, null);
+    ```
+    
+    What it does:
+    - Creates ORB instance for this JVM
+    - Parses command-line arguments (port, host, etc.)
+    - Sets up network communication (IIOP)
+    - Initializes GIOP protocol handler
+    - Prepares for stub/skeleton operations
+    - Registers with Naming Service
+    
+    Configuration example:
+    ```bash
+    java Server -ORBInitialPort 1050 -ORBInitialHost localhost
+    ```
+    
+    Must be:
+    - First CORBA call in program
+    - Same configuration for client and server
+    - Called before any POA operations
+
+### Advanced Level Questions
+11. **Compare CORBA marshalling with RMI marshalling.**
+    
+    **Answer**:
+    **CORBA Marshalling**:
+    - Uses CDR (Common Data Representation)
+    - Binary format (compact, efficient)
+    - Handles byte alignment automatically
+    - Supports big-endian and little-endian
+    - Handled by GIOP protocol layer
+    - Works across all languages
+    
+    **RMI Marshalling**:
+    - Uses Java serialization
+    - More verbose than CDR
+    - Java-specific object encoding
+    - Less efficient but more feature-rich
+    - Supports Java object graphs
+    - Only works with Java
+    
+    Comparison:
+    ```
+    CORBA CDR: Compact, standardized, language-agnostic
+    RMI Serialization: Complete, Java-rich, Java-only
+    
+    Example: Integer 300
+    CDR: 2C 01 (hex) - 2 bytes
+    RMI: ac f3 17 f6 06 01 01 2C 01 (more overhead)
+    ```
+    
+    CDR is more efficient for network transmission.
+
+12. **How does CORBA handle method invocation across different languages?**
+    
+    **Answer**:
+    Process:
+    ```
+    C++ Client calls Java Server:
+    
+    1. C++ stub calls local method (looks local to C++)
+    2. C++ stub marshals parameters using CDR
+    3. IIOP sends over network
+    4. Java skeleton receives IIOP packet
+    5. Java skeleton unmarshals CDR to Java objects
+    6. Java method called with native Java types
+    7. Method executes, returns Java result
+    8. Java skeleton marshals result to CDR
+    9. IIOP sends result back
+    10. C++ stub unmarshals to C++ types
+    11. C++ code receives result
+    ```
+    
+    IDL as Bridge:
+    ```idl
+    interface Calculator {
+        float add(in float a, in float b);
+    }
+    ```
+    
+    Both C++ and Java implement this same interface.
+    CDR format ensures all understand same data.
+
+13. **What is the difference between oneway and regular method calls in CORBA?**
+    
+    **Answer**:
+    **Regular (Synchronous)**:
+    ```idl
+    float add(in float a, in float b);
+    ```
+    - Client waits for response
+    - Receives return value
+    - Exception handling possible
+    - Blocking call
+    - Used for most operations
+    
+    **Oneway (Asynchronous)**:
+    ```idl
+    oneway void logEvent(in string message);
+    ```
+    - Client doesn't wait for response
+    - No return value (always void)
+    - No exception feedback
+    - Non-blocking call
+    - Used for notifications, logging
+    
+    When to use:
+    - Oneway: Notifications, fire-and-forget
+    - Regular: When you need result/confirmation
+
+14. **Explain the CORBA object model and how it compares to OOP.**
+    
+    **Answer**:
+    **CORBA Object Model**:
+    - Objects are distributed (not in same process)
+    - Accessed through references (not pointers)
+    - Method invocation is remote (has latency)
+    - Objects can fail independently
+    - No direct memory access
+    - Pass-by-value semantics for primitives
+    
+    **Comparison to Local OOP**:
+    ```
+    Local OOP:
+    obj.method() → immediate execution → result
+    
+    CORBA:
+    obj.method() → network → remote execution → network → result
+    Time: microseconds → milliseconds
+    ```
+    
+    Differences:
+    - **Latency**: CORBA has ~1000x overhead
+    - **Reliability**: Network can fail
+    - **Concurrency**: Multiple clients, server-side synchronization
+    - **State**: Only server holds state, clients are stateless
+    - **Garbage Collection**: Server manages, not local GC
+
+15. **What are the security implications of using CORBA in untrusted networks?**
+    
+    **Answer**:
+    **Security Risks**:
+    1. **No encryption by default**: IIOP sends data in clear
+    2. **Object injection**: Malicious objects via deserialization
+    3. **Unauthorized access**: No built-in authentication
+    4. **Man-in-the-middle**: Attacker intercepts traffic
+    
+    **Mitigation Strategies**:
+    1. **IIOPS** (IIOP Secure):
+       ```
+       Use SSL/TLS for encryption
+       java -Dcom.sun.CORBA.security=true ...
+       ```
+    
+    2. **Authentication**:
+       ```idl
+       interface SecureService {
+           boolean login(in string user, in string password);
+           Result getSecureData(in string sessionToken);
+       };
+       ```
+    
+    3. **Authorization**:
+       - Check permissions on server
+       - Role-based access control
+       - Fine-grained method permissions
+    
+    4. **Firewalls**:
+       - Limit IIOP port access
+       - Whitelist trusted hosts
+    
+    5. **Serialization Filters**:
+       - Restrict class deserialization
+       - Validate object types before using
+
+### Scenario-Based Questions
+16. **Design a CORBA-based distributed database system supporting C++ clients and Java servers.**
+    
+    **Answer**:
+    IDL Design:
+    ```idl
+    module DistributedDB {
+        exception DatabaseException { string message; };
+        exception RecordNotFound {};
+        
+        interface Database {
+            string query(in string sql) raises(DatabaseException);
+            void insert(in string table, in string data) raises(DatabaseException);
+            void update(in string table, in string where, in string data)
+                raises(DatabaseException, RecordNotFound);
+            void delete(in string table, in string where) raises(DatabaseException);
+        };
+    };
+    ```
+    
+    Java Server Implementation:
+    ```java
+    class DatabaseImpl extends DatabasePOA {
+        private Connection dbConnection;
+        
+        public String query(String sql) throws DatabaseException {
+            // Execute SQL query, return JSON
+            return executeQuery(sql);
+        }
+    }
+    ```
+    
+    C++ Client:
+    ```cpp
+    Database_var db = // lookup from Naming Service
+    string result = db->query("SELECT * FROM users");
+    ```
+    
+    Benefits:
+    - C++ frontend, Java backend seamlessly integrated
+    - Language-native client and server
+    - IDL ensures compatibility
+
+17. **How would you implement a CORBA-based chat system where multiple clients communicate?**
+    
+    **Answer**:
+    Using callbacks/observers:
+    ```idl
+    module ChatSystem {
+        interface ChatListener {
+            oneway void onMessage(in string user, in string message);
+        };
+        
+        interface ChatServer {
+            void registerListener(in ChatListener listener);
+            void sendMessage(in string user, in string message);
+        };
+    };
+    ```
+    
+    Implementation:
+    ```java
+    class ChatServerImpl extends ChatServerPOA {
+        List<ChatListener> listeners = new ArrayList<>();
+        
+        public void registerListener(ChatListener listener) {
+            listeners.add(listener);
+        }
+        
+        public void sendMessage(String user, String message) {
+            for (ChatListener l : listeners) {
+                l.onMessage(user, message);  // Callback to clients
+            }
+        }
+    }
+    ```
+    
+    How it works:
+    1. Client registers as ChatListener with server
+    2. Client1 sends message
+    3. Server calls onMessage() on all registered listeners
+    4. All clients receive notification via callback
+
+18. **What happens if CORBA Naming Service goes down?**
+    
+    **Answer**:
+    Scenario:
+    ```
+    Naming Service crashes:
+    ├─ Existing clients with object references: CONTINUE WORKING
+    ├─ New clients trying Naming.lookup(): FAIL
+    └─ New services can't register
+    ```
+    
+    Solutions:
+    1. **High Availability**:
+       ```
+       Multiple Naming Service instances
+       Primary ← → Replica 1 ← → Replica 2
+       If primary fails, promote replica
+       ```
+    
+    2. **Embedded References**:
+       ```
+       Clients cache object references
+       Use cached reference if Naming Service down
+       Fallback to Naming Service on retry
+       ```
+    
+    3. **Multiple Naming Contexts**:
+       ```
+       Each region has local Naming Service
+       Hierarchy of naming services
+       ```
+    
+    4. **Persistence**:
+       ```
+       Backup Naming Service data regularly
+       Restore from backup on failure
+       ```
+
+19. **Explain how CORBA maintains type safety across heterogeneous systems.**
+    
+    **Answer**:
+    Type safety mechanisms:
+    
+    1. **IDL as Contract**:
+       ```idl
+       float divide(in float a, in float b) raises(DivisionByZero);
+       ```
+       Both C++ and Java see same interface, same parameters.
+    
+    2. **Compiler Verification**:
+       ```
+       IDL Compiler → Generated code
+       └─ Verifies all types match
+       └─ Enforces exception specifications
+       └─ Ensures method signatures consistent
+       ```
+    
+    3. **CDR Encoding**:
+       ```
+       Each type encoded with type tag
+       Receiver validates type before deserializing
+       Type mismatch rejected early
+       ```
+    
+    4. **Language Mapping Rules**:
+       ```
+       IDL float → Java float (32-bit)
+       IDL float → C++ float (32-bit)
+       Type systems aligned by CORBA spec
+       ```
+    
+    5. **Runtime Type Checking**:
+       ```java
+       Interface repository stores type info
+       Runtime can verify types
+       Invalid casts caught at runtime
+       ```
+
+20. **Design a CORBA system that supports multiple versions of an interface simultaneously.**
+    
+    **Answer**:
+    Versioning strategy:
+    ```idl
+    // Version 1.0
+    module BankingV1 {
+        interface Account {
+            float getBalance();
+            void transfer(in string toAccount, in float amount);
+        };
+    };
+    
+    // Version 2.0 (backward compatible)
+    module BankingV2 {
+        interface Account {
+            float getBalance();
+            void transfer(in string toAccount, in float amount);
+            void transferWithDescription(in string toAccount, in float amount, 
+                                        in string description);
+        };
+    };
+    ```
+    
+    Implementation approach:
+    ```java
+    class AccountImpl extends BankingV2.AccountPOA {
+        // Implement V1 methods
+        public float getBalance() { ... }
+        public void transfer(String to, float amount) { ... }
+        
+        // Implement new V2 methods
+        public void transferWithDescription(String to, float amount, String desc) { ... }
+    }
+    ```
+    
+    Client compatibility:
+    ```java
+    // Old V1 client
+    BankingV1.Account old = lookup("Account");
+    old.transfer("acc123", 100);  // Works
+    
+    // New V2 client
+    BankingV2.Account new = lookup("Account");
+    new.transferWithDescription("acc123", 100, "Rent payment");  // Works
+    ```
+    
+    Best practices:
+    - Never remove methods (breaks old clients)
+    - Only add new methods
+    - Default behavior for new optional parameters
+    - Use separate modules/namespaces for versions
+
+---
+
+## 🔧 DISTRIBUTED SYSTEMS CONCEPTS & THEORY
+
+### 1. **CORBA (Common Object Request Broker Architecture)**
+
+#### **Definition**
+CORBA is a standardized framework for building distributed applications that integrate objects written in different programming languages and running on different platforms. It provides language and platform independence through a standardized interface definition language (IDL).
+
+#### **Why CORBA?**
+- **Language-Independent**: C++, Java, Python, C#, etc. can interoperate
+- **Platform-Independent**: Windows, Linux, Unix, mainframes work together
+- **Industry Standard**: OMG (Object Management Group) specification
+- **Object-Oriented**: Distributed objects, not just procedures
+- **Vendor Neutral**: Multiple ORB implementations available
+- **Enterprise-Ready**: Mature, widely adopted in large systems
+
+#### **When to Use CORBA?**
+✅ Heterogeneous enterprise systems
+✅ Multi-language integration (C++, Java, Python together)
+✅ Legacy system integration
+✅ Complex distributed systems
+✅ High-reliability systems (finance, telecom)
+
+❌ Simple web services (use REST)
+❌ Microservices (use gRPC/REST)
+❌ Real-time systems with strict latency requirements
+❌ Mobile applications
+❌ Cloud-native applications
+
+#### **CORBA vs RMI - Comparison**
+
+| Aspect | CORBA | RMI |
+|--------|-------|-----|
+| **Language Support** | Multi-language | Java only |
+| **Platform Support** | Multi-platform | All (JVM-based) |
+| **Interface Definition** | IDL (separate) | Java interface |
+| **Learning Curve** | Steep | Easy |
+| **Complexity** | High | Low |
+| **Performance** | Slower | Faster |
+| **Industry Adoption** | Enterprise | Declining |
+| **Best For** | Large heterogeneous systems | Java-to-Java systems |
+
+#### **CORBA Architecture Overview**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    CORBA SYSTEM OVERVIEW                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌─────────────────┐          ┌──────────────────┐         │
+│  │   CLIENT SIDE   │          │  SERVER SIDE     │         │
+│  │   (C++/Java)    │          │  (Java/C++)      │         │
+│  └────────┬────────┘          └─────────┬────────┘         │
+│           │                             │                   │
+│        ┌──▼──────────┐           ┌──────▼─────┐            │
+│        │ IDL Stubs   │           │  Skeletons │            │
+│        └──┬──────────┘           └──────┬─────┘            │
+│           │                             │                   │
+│        ┌──▼────────────────────────────▼──┐               │
+│        │         ORB (Object Request       │               │
+│        │         Broker) - Network         │               │
+│        │  Protocol: IIOP (TCP/IP)          │               │
+│        │  Data Encoding: CDR               │               │
+│        └──┬────────────────────────────┬──┘               │
+│           │                            │                   │
+│        ┌──▼─────────┐          ┌──────▼──────┐           │
+│        │   NamingService  ◄────┤   POA &     │           │
+│        │   (Service Discovery) │  Servants   │           │
+│        └────────────┘          └─────────────┘           │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### **How CORBA Works - Step by Step**
+```
+1. IDL Definition
+   ├─ Interface specification (language-independent)
+   └─ Compiler generates stubs, skeletons, helpers
+
+2. Implementation
+   ├─ Implement interface in target language
+   └─ Create Servant class
+
+3. Server Startup
+   ├─ Initialize ORB
+   ├─ Create and register POA
+   ├─ Instantiate servant
+   └─ Register with Naming Service
+
+4. Client Lookup
+   ├─ Initialize ORB
+   ├─ Query Naming Service
+   └─ Get remote object reference
+
+5. Method Invocation
+   ├─ Call method on stub (looks local)
+   ├─ Stub marshals parameters using CDR
+   ├─ ORB sends IIOP packet to server
+   ├─ Server skeleton unmarshals data
+   ├─ Servant executes method
+   ├─ Result marshaled and sent back
+   └─ Client receives and unmarshals
+
+6. Result Delivery
+   ├─ Stub unmarshals response
+   └─ Application receives result
+```
+
+---
+
+### 2. **IDL (Interface Definition Language)**
+
+#### **Definition**
+IDL is a language-neutral way to specify interfaces that CORBA objects must implement. It is independent of any programming language.
+
+#### **Purpose**
+- **Contract Definition**: Specifies what methods are available
+- **Language Mapping**: Defines how IDL maps to different languages
+- **Compilation**: Compiler generates language-specific stubs and skeletons
+- **Interoperability**: Ensures consistency across heterogeneous systems
+
+#### **IDL Structure**
+```idl
+module ModuleName {
+    // Type definitions
+    typedef long myInteger;
+    
+    // Exceptions
+    exception DivisionByZero {};
+    
+    // Interface definition
+    interface InterfaceName {
+        // Attributes
+        attribute string name;
+        
+        // Methods
+        void methodName(in type1 param1, out type2 param2, inout type3 param3)
+            raises(ExceptionName);
+        
+        // Return value method
+        returnType anotherMethod(in paramType param)
+            raises(Exception1, Exception2);
+    };
+};
+```
+
+#### **Parameter Modes in IDL**
+- **in**: Input parameter (passed to server)
+- **out**: Output parameter (returned from server)
+- **inout**: Both input and output
+
+#### **CORBA Data Types**
+```idl
+// Primitive types
+short, long, unsigned short, unsigned long
+float, double
+char, wchar, string, wstring
+boolean, octet
+
+// Constructed types
+struct, union, enum, sequence, array
+
+// Object type
+Object
+```
+
+#### **Example: Calculator.idl**
+```idl
+module CalculatorApp {
+    // Custom exception
+    exception DivisionByZero {};
+    
+    // Remote interface
+    interface Calculator {
+        // Basic operations
+        float add(in float a, in float b);
+        float subtract(in float a, in float b);
+        float multiply(in float a, in float b);
+        
+        // Operation that can raise exception
+        float divide(in float a, in float b) raises(DivisionByZero);
+    };
+};
+```
+
+---
+
+### 3. **ORB (Object Request Broker)**
+
+#### **Definition**
+The ORB is the middleware that handles communication between distributed objects. It manages all aspects of object communication.
+
+#### **Key Responsibilities**
+1. **Request Marshalling**: Convert parameters to network format (CDR)
+2. **Request Transmission**: Send over IIOP protocol
+3. **Request Unmarshalling**: Convert received data back to objects
+4. **Exception Handling**: Propagate exceptions across network
+5. **Service Location**: Find remote objects via Naming Service
+
+#### **IIOP (Internet Inter-ORB Protocol)**
+- **Protocol**: TCP/IP-based communication protocol
+- **Default Port**: 1050 (configurable)
+- **Message Format**: GIOP (General Inter-ORB Protocol)
+- **Data Encoding**: CDR (Common Data Representation)
+
+#### **CDR (Common Data Representation)**
+- **Purpose**: Standardized binary encoding for data transmission
+- **Alignment**: Handles byte alignment across platforms
+- **Endianness**: Automatic big-endian/little-endian conversion
+- **Encoding**: Compact binary format (more efficient than XML)
+
+#### **ORB Initialization**
+```java
+ORB orb = ORB.init(args, null);
+// args contains ORB configuration like:
+// -ORBInitialPort 1050
+// -ORBInitialHost localhost
+```
+
+---
+
+### 4. **POA (Portable Object Adapter)**
+
+#### **Definition**
+POA is the component that manages the server-side object implementations (servants). It provides the bridge between CORBA objects and their implementations.
+
+#### **Key Functions**
+1. **Servant Management**: Creates and manages servant instances
+2. **Activation**: Converts servants to CORBA object references
+3. **Request Routing**: Directs incoming requests to appropriate servants
+4. **Object Lifecycle**: Manages object creation and deletion
+
+#### **Important Methods**
+```java
+// Create POA
+POA rootpoa = POAHelper.narrow(orb.resolve_initial_references("RootPOA"));
+
+// Activate POA Manager
+rootpoa.the_POAManager().activate();
+
+// Convert servant to CORBA object reference
+org.omg.CORBA.Object ref = rootpoa.servant_to_reference(servant);
+
+// Narrow to specific interface type
+Calculator href = CalculatorHelper.narrow(ref);
+```
+
+#### **POA Advantages**
+- **Portability**: Can use same servant code across ORB implementations
+- **Flexibility**: Different activation and deactivation policies
+- **Inheritance**: Servants inherit from POA skeletons
+
+---
+
+### 5. **Naming Service**
+
+#### **Definition**
+The CORBA Naming Service is a directory service that allows clients to locate remote objects by name.
+
+#### **Hierarchy**
+- **Root Context**: Top-level naming context
+- **Naming Contexts**: Organize services hierarchically
+- **Name Bindings**: Associate names with object references
+
+#### **Operations**
+```java
+// Get Naming Service reference
+org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
+NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+
+// Bind object (server-side)
+NameComponent path[] = ncRef.to_name("Calculator");
+ncRef.rebind(path, href);
+
+// Resolve object (client-side)
+Calculator calculator = CalculatorHelper.narrow(ncRef.resolve_str("Calculator"));
+```
+
+#### **Comparison with RMI Registry**
+| Aspect | Naming Service | RMI Registry |
+|--------|---|---|
+| **Hierarchy** | Hierarchical | Flat |
+| **Multiple services** | Yes | Single service per registry |
+| **Standard** | CORBA standard | Java-specific |
+| **Complexity** | Higher | Lower |
+
+---
+
+### 6. **Stubs and Skeletons**
+
+#### **Stubs (Client-Side)**
+- **Generated by IDL Compiler**: Creates proxy on client
+- **Marshalling**: Serializes method parameters
+- **Network Transmission**: Sends request to server
+- **Unmarshalling**: Receives and deserializes response
+- **Type Safety**: Provides Java interface to remote object
+
+#### **Skeletons (Server-Side)**
+- **Unmarshalling**: Deserializes incoming request
+- **Method Dispatch**: Routes request to correct servant
+- **Method Execution**: Calls actual servant implementation
+- **Marshalling**: Serializes response
+- **Transmission**: Sends response to client
+
+#### **Generation Process**
+```bash
+# IDL compilation generates:
+idlj -fall Calculator.idl
+
+# Files generated:
+CalculatorApp/
+  ├─ Calculator.java (interface)
+  ├─ CalculatorPOA.java (server skeleton)
+  ├─ CalculatorHelper.java (type narrowing)
+  └─ CalculatorHolder.java (output parameter holder)
+```
+
+---
+
+### 7. **Helpers and Holders**
+
+#### **Helper Classes**
+- **Purpose**: Type narrowing and serialization
+- **Method**: `narrow()` - safely cast CORBA object to specific type
+- **Generated by IDL Compiler**
+
+```java
+// Example: Cast CORBA.Object to Calculator
+Calculator calc = CalculatorHelper.narrow(objRef);
+```
+
+#### **Holder Classes**
+- **Purpose**: Hold output parameters (out and inout modes)
+- **Use Case**: When method returns values through parameters
+- **Not common in this simple example**
+
+---
+
+### 8. **Exception Handling in CORBA**
+
+#### **User-Defined Exceptions**
+```idl
+exception DivisionByZero {};
+exception InvalidInput { string message; };
+```
+
+#### **Throwing Exceptions**
+```java
+public float divide(float a, float b) throws DivisionByZero {
+    if (b == 0) throw new DivisionByZero();
+    return a / b;
+}
+```
+
+#### **Catching Exceptions**
+```java
+try {
+    calculator.divide(10, 0);
+} catch (DivisionByZero e) {
+    System.out.println("Division by zero!");
+} catch (Exception e) {
+    System.out.println("Communication error: " + e.getMessage());
+}
+```
+
+---
+
+## 💻 CODE WALKTHROUGH: 2_CORBA
+
+### **File 1: Calculator.idl** (Interface Definition Language)
+
+```idl
+module CalculatorApp {
+    exception DivisionByZero {};
+    interface Calculator {
+        float add(in float a, in float b);
+        float subtract(in float a, in float b);
+        float multiply(in float a, in float b);
+        float divide(in float a, in float b) raises(DivisionByZero);
+    };
+};
+```
+
+**Line-by-line Explanation**:
+
+| Line | Code | Explanation |
+|------|------|-------------|
+| 1 | `module CalculatorApp {` | Define CORBA module (namespace-like) |
+| 2 | `exception DivisionByZero {};` | Define custom exception (no fields) |
+| 3 | `interface Calculator {` | Define remote interface (contract) |
+| 4-7 | `float add/subtract/multiply/divide(...)` | Declare remote methods |
+| 5 | `in float a, in float b` | Input parameters (passed to server) |
+| 7 | `raises(DivisionByZero)` | Method can throw this exception |
+| 9 | `};` | Close module |
+
+**Key Points**:
+- ✅ **Language-Independent**: No Java syntax
+- ✅ **Interface Contract**: Specifies exactly what methods available
+- ✅ **Parameter Direction**: `in` indicates input parameters
+- ✅ **Exception Specification**: `raises` declares possible exceptions
+- ✅ **Type System**: Strong typing (float, int, string, etc.)
+
+**How It's Processed**:
+```
+Calculator.idl (IDL source)
+        ↓
+    idlj Compiler
+        ↓
+Generated Files:
+├─ Calculator.java (remote interface)
+├─ CalculatorPOA.java (server skeleton base class)
+├─ CalculatorHelper.java (type narrowing utility)
+├─ CalculatorHolder.java (output parameter holder)
+└─ DivisionByZero.java (exception class)
+```
+
+---
+
+### **File 2: Generated CalculatorPOA** (What IDL Compiler Generates)
+
+When you run `idlj -fall Calculator.idl`, the compiler generates:
+
+```java
+// Generated file: CalculatorPOA.java
+// (You don't write this - compiler creates it)
+
+public abstract class CalculatorPOA extends ... {
+    // Base class for server implementation
+    
+    abstract public float add(float a, float b);
+    abstract public float subtract(float a, float b);
+    abstract public float multiply(float a, float b);
+    abstract public float divide(float a, float b) throws DivisionByZero;
+}
+```
+
+**Purpose**:
+- Skeleton that bridges CORBA runtime and your implementation
+- Handles marshalling/unmarshalling
+- Routes requests to your implementation
+
+---
+
+### **File 3: CalculatorImpl.java** (Implementation)
+
+```java
+import CalculatorApp.*;
+import org.omg.CORBA.*;
+import org.omg.CosNaming.*;
+import org.omg.PortableServer.*;
+
+class CalculatorImpl extends CalculatorPOA {
+    private ORB orb;
+
+    public void setORB(ORB orb_val) {
+        orb = orb_val;
+    }
+
+    public float add(float a, float b) {
+        return a + b;
+    }
+
+    public float subtract(float a, float b) {
+        return a - b;
+    }
+
+    public float multiply(float a, float b) {
+        return a * b;
+    }
+
+    public float divide(float a, float b) throws DivisionByZero {
+        if (b == 0) throw new DivisionByZero();
+        return a / b;
+    }
+}
+```
+
+**Step-by-Step Explanation**:
+
+#### **Imports**
+```java
+import CalculatorApp.*;        // Generated from IDL
+import org.omg.CORBA.*;        // CORBA framework
+import org.omg.CosNaming.*;    // Naming Service API
+import org.omg.PortableServer.*;  // POA API
+```
+
+#### **Class Declaration**
+```java
+class CalculatorImpl extends CalculatorPOA {
+```
+
+**What this means**:
+- **`extends CalculatorPOA`**: Inherits skeleton generated from IDL
+  - Provides marshalling/unmarshalling infrastructure
+  - Routing mechanism for incoming requests
+  - Network transparency
+  
+- **CalculatorPOA provides**:
+  - Abstract methods that we must implement
+  - Method invocation handling
+  - Exception marshalling
+  - Parameter serialization
+
+**Inheritance Chain**:
+```
+CalculatorImpl
+    ↓ extends
+CalculatorPOA (IDL-generated skeleton)
+    ↓ extends
+ServantBase (CORBA runtime base)
+    ↓ implements
+multiple CORBA interfaces
+```
+
+#### **ORB Reference**
+```java
+private ORB orb;
+
+public void setORB(ORB orb_val) {
+    orb = orb_val;
+}
+```
+
+**Purpose**:
+- Server needs reference to ORB
+- Used to shut down server gracefully
+- Access to CORBA services
+
+**Why separate setter?**:
+- Constructor called during POA servant creation
+- ORB created after instantiation
+- Setter called after object creation
+
+#### **Method: add()**
+```java
+public float add(float a, float b) {
+    return a + b;
+}
+```
+
+**Execution Flow When Called**:
+```
+1. Client calls: calculator.add(10, 5)
+   (Actually calls stub)
+   
+2. Stub marshals: parameters=[10.0, 5.0], method="add"
+   
+3. Stub sends over IIOP:
+   Packet contains: module="CalculatorApp", 
+                   interface="Calculator", 
+                   method="add", 
+                   params=[10.0, 5.0]
+   
+4. Server POA receives packet
+   
+5. Skeleton unmarshals:
+   method="add", a=10.0, b=5.0
+   
+6. Skeleton calls: CalculatorImpl.add(10.0, 5.0)
+   
+7. Method executes: 10.0 + 5.0 = 15.0
+   
+8. Skeleton marshals result: 15.0
+   
+9. Skeleton sends over IIOP: Result packet
+   
+10. Client stub receives and unmarshals: 15.0
+    
+11. Return to application: result = 15.0
+```
+
+#### **Method: subtract(), multiply()**
+```java
+public float subtract(float a, float b) {
+    return a - b;
+}
+
+public float multiply(float a, float b) {
+    return a * b;
+}
+```
+
+**Same process as add()**:
+- Marshalling/unmarshalling handles automatically
+- Only difference: arithmetic operation
+
+#### **Method: divide()** (Exception Handling)
+```java
+public float divide(float a, float b) throws DivisionByZero {
+    if (b == 0) throw new DivisionByZero();
+    return a / b;
+}
+```
+
+**Execution Flow**:
+
+**Case 1: Normal Division**
+```
+Input: divide(10, 2)
+    ↓
+Check: b == 0? NO
+    ↓
+Execute: 10 / 2 = 5.0
+    ↓
+Return: 5.0 (marshaled and sent to client)
+    ↓
+Client receives: 5.0
+```
+
+**Case 2: Division by Zero**
+```
+Input: divide(10, 0)
+    ↓
+Check: b == 0? YES
+    ↓
+Throw: new DivisionByZero()
+    ↓
+Skeleton catches exception
+    ↓
+Skeleton marshals exception
+    ↓
+Send exception packet over IIOP
+    ↓
+Client stub receives exception packet
+    ↓
+Stub unmarshals and throws: DivisionByZero
+    ↓
+Client catches: catch (DivisionByZero e) {...}
+```
+
+**Key Point**: Exception is thrown on server, serialized, sent over network, and re-thrown on client!
+
+---
+
+### **File 4: CalculatorServer.java** (Server Process)
+
+```java
+import CalculatorApp.*;
+import org.omg.CORBA.*;
+import org.omg.CosNaming.*;
+import org.omg.PortableServer.*;
+
+class CalculatorImpl extends CalculatorPOA {
+    // ... implementation (shown above)
+}
+
+public class CalculatorServer {
+    public static void main(String args[]) {
+        try {
+            // Step 1: Initialize ORB
+            ORB orb = ORB.init(args, null);
+            
+            // Step 2: Get reference to RootPOA and activate POA Manager
+            POA rootpoa = POAHelper.narrow(orb.resolve_initial_references("RootPOA"));
+            rootpoa.the_POAManager().activate();
+
+            // Step 3: Create servant and register it with ORB
+            CalculatorImpl calculator = new CalculatorImpl();
+            calculator.setORB(orb);
+            org.omg.CORBA.Object ref = rootpoa.servant_to_reference(calculator);
+            Calculator href = CalculatorHelper.narrow(ref);
+
+            // Step 4: Bind object to Naming Service
+            org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
+            NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+            NameComponent path[] = ncRef.to_name("Calculator");
+            ncRef.rebind(path, href);
+
+            System.out.println("Calculator Server is running...");
+            orb.run();
+        } catch (Exception e) {
+            System.err.println("Server exception: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+**Step-by-Step Execution**:
+
+#### **Step 1: Initialize ORB**
+```java
+ORB orb = ORB.init(args, null);
+```
+
+**What happens**:
+```
+1. ORB.init() reads command-line arguments:
+   -ORBInitialPort 1050       (port for IIOP)
+   -ORBInitialHost localhost  (hostname for IIOP)
+   
+2. Creates ORB instance
+   
+3. ORB initializes:
+   - TCP/IP socket on port 1050
+   - GIOP protocol handler
+   - Request dispatcher
+   - Service resolver
+   
+4. Returns ORB reference for further operations
+```
+
+**Arguments Passed**:
+```bash
+java CalculatorServer -ORBInitialPort 1050 -ORBInitialHost localhost
+```
+
+#### **Step 2: Get Root POA and Activate**
+```java
+POA rootpoa = POAHelper.narrow(orb.resolve_initial_references("RootPOA"));
+rootpoa.the_POAManager().activate();
+```
+
+**What POA does**:
+```
+rootpoa = POAHelper.narrow(...)
+    ↓
+Resolves "RootPOA" from ORB
+    ↓
+Narrows CORBA.Object to POA interface
+    ↓
+POA now available for servant management
+
+rootpoa.the_POAManager().activate()
+    ↓
+Activates POA Manager
+    ↓
+POA ready to receive and route requests
+    ↓
+Otherwise, incoming requests get no-response
+```
+
+#### **Step 3: Create Servant and Register with ORB**
+```java
+CalculatorImpl calculator = new CalculatorImpl();
+calculator.setORB(orb);
+org.omg.CORBA.Object ref = rootpoa.servant_to_reference(calculator);
+Calculator href = CalculatorHelper.narrow(ref);
+```
+
+**Execution Flow**:
+
+```
+1. new CalculatorImpl()
+   └─ Creates servant instance (actual implementation)
+
+2. calculator.setORB(orb)
+   └─ Stores ORB reference for shutdown operations
+
+3. rootpoa.servant_to_reference(calculator)
+   └─ Converts servant object to CORBA object reference
+   └─ POA assigns unique object ID
+   └─ POA registers servant for request routing
+   └─ Returns CORBA.Object reference
+
+4. CalculatorHelper.narrow(ref)
+   └─ Type-safe casting of CORBA.Object to Calculator
+   └─ Ensures ref implements Calculator interface
+   └─ Returns strongly-typed reference
+   └─ Similar to Java instanceof + cast
+```
+
+**What POA Does Internally**:
+```
+Servant Instance: CalculatorImpl object
+    ↓ POA creates mapping
+{
+    ObjectID: "xyz123"
+    Servant: CalculatorImpl instance
+    Interface: Calculator
+}
+    ↓
+When request comes in with ObjectID "xyz123"
+    ↓
+POA routes to correct CalculatorImpl instance
+    ↓
+Request dispatched to mapped servant
+```
+
+#### **Step 4: Register with Naming Service**
+```java
+org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
+NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+NameComponent path[] = ncRef.to_name("Calculator");
+ncRef.rebind(path, href);
+```
+
+**Execution Flow**:
+
+```
+1. orb.resolve_initial_references("NameService")
+   └─ Asks ORB: "Where is the Naming Service?"
+   └─ ORB has default location (usually localhost:1050)
+   └─ Returns reference to Naming Service
+
+2. NamingContextExtHelper.narrow(objRef)
+   └─ Casts CORBA.Object to NamingContextExt
+   └─ Provides directory service API
+
+3. ncRef.to_name("Calculator")
+   └─ Creates NameComponent path from string
+   └─ Similar to file path "Calculator"
+   └─ Could also be hierarchical: "Services/Calculator"
+
+4. ncRef.rebind(path, href)
+   └─ Registers mapping in Naming Service:
+      Name: "Calculator"
+      Reference: href (our remote object)
+   └─ If already registered, overwrites (rebind vs bind)
+```
+
+**What Naming Service Now Contains**:
+```
+NameService Registry:
+┌─────────────────────────────────┐
+│ Name: "Calculator"              │
+│ Reference: CORBA object ref     │
+│ Interface: Calculator           │
+│ Accessibility: Global           │
+└─────────────────────────────────┘
+
+Clients can now query:
+"Where can I find Calculator?"
+NameService responds:
+"At IIOP://localhost:1050/Calculator"
+```
+
+#### **Step 5: Start Server Loop**
+```java
+System.out.println("Calculator Server is running...");
+orb.run();
+```
+
+**What `orb.run()` does**:
+```
+1. Starts main event loop
+   
+2. Loop continuously listens for:
+   - Incoming IIOP requests on port 1050
+   - Client method invocations
+   - Naming Service queries
+
+3. For each incoming request:
+   - Unmarshal parameters (CDR → Java objects)
+   - Determine target servant
+   - Call appropriate method
+   - Marshal result (Java object → CDR)
+   - Send response
+
+4. Loop continues indefinitely:
+   - Server handles multiple clients
+   - Each request in separate thread
+   - Concurrent request processing
+
+5. orb.run() blocks:
+   - Main thread stays in loop
+   - Server keeps running
+   - Ctrl+C to terminate
+```
+
+#### **Exception Handling**
+```java
+} catch (Exception e) {
+    System.err.println("Server exception: " + e.getMessage());
+    e.printStackTrace();
+}
+```
+
+**Possible Exceptions**:
+- `ORBInitException`: Failed to initialize ORB
+- `CORBAException`: CORBA-specific errors
+- `NamingException`: Naming Service unavailable
+- `RemoteException`: Network issues
+- Any other exception during startup
+
+---
+
+### **File 5: CalculatorClient.java** (Client Process)
+
+```java
+import CalculatorApp.*;
+import org.omg.CORBA.*;
+import org.omg.CosNaming.*;
+
+public class CalculatorClient {
+    public static void main(String args[]) {
+        try {
+            // Step 1: Initialize ORB
+            ORB orb = ORB.init(args, null);
+
+            // Step 2: Get reference to Naming Service
+            org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
+            NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+
+            // Step 3: Resolve Calculator object
+            Calculator calculator = CalculatorHelper.narrow(ncRef.resolve_str("Calculator"));
+
+            // Step 4: Perform operations
+            System.out.println("Addition (10 + 5): " + calculator.add(10, 5));
+            System.out.println("Subtraction (10 - 5): " + calculator.subtract(10, 5));
+            System.out.println("Multiplication (10 * 5): " + calculator.multiply(10, 5));
+
+            try {
+                System.out.println("Division (10 / 2): " + calculator.divide(10, 2));
+                System.out.println("Division (10 / 0): " + calculator.divide(10, 0));
+            } catch (DivisionByZero e) {
+                System.out.println("Error: Division by zero is not allowed!");
+            }
+
+        } catch (Exception e) {
+            System.err.println("Client exception: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+**Step-by-Step Execution**:
+
+#### **Step 1: Initialize ORB**
+```java
+ORB orb = ORB.init(args, null);
+```
+
+**What happens**:
+```
+1. Reads command-line arguments:
+   -ORBInitialPort 1050       (port to connect to)
+   -ORBInitialHost localhost  (server location)
+   
+2. Creates ORB instance with same configuration
+   
+3. ORB initializes for CLIENT mode:
+   - Prepares to send IIOP requests
+   - Initializes stub marshalling
+   - Sets up network connection
+```
+
+#### **Step 2: Lookup Naming Service**
+```java
+org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
+NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+```
+
+**Execution Flow**:
+
+```
+1. orb.resolve_initial_references("NameService")
+   └─ Asks: "Where is NameService?"
+   └─ ORB uses default location from args:
+      localhost:1050
+   └─ Connects to CORBA NameService
+   └─ Returns reference to NameService
+
+2. NamingContextExtHelper.narrow(objRef)
+   └─ Type-safe casting
+   └─ Converts CORBA.Object to NamingContextExt
+   └─ Now can call directory operations
+```
+
+#### **Step 3: Resolve Remote Object**
+```java
+Calculator calculator = CalculatorHelper.narrow(ncRef.resolve_str("Calculator"));
+```
+
+**Network Communication**:
+
+```
+1. ncRef.resolve_str("Calculator")
+   
+2. Client sends query to NameService:
+   "Give me reference for 'Calculator'"
+   
+3. NameService lookup:
+   Searches registry for name "Calculator"
+   Found: CORBA reference to remote Calculator
+   
+4. NameService responds with:
+   IIOP://localhost:1050/Calculator
+   (Object ID, interface info, server address)
+   
+5. Client receives remote object reference
+   (Still just a reference, not actual object)
+   
+6. CalculatorHelper.narrow(ref)
+   └─ Type-safe casting to Calculator interface
+   └─ Creates STUB proxy object locally
+   └─ Stub ready to forward calls to server
+   
+7. Return: calculator (stub proxy)
+```
+
+**What is `calculator` variable now?**
+- Not the real Calculator on server
+- Stub proxy on client side
+- Looks and feels like Calculator interface
+- All method calls forwarded to server
+
+#### **Step 4: Perform Operations**
+
+**Operation 1: Addition**
+```java
+System.out.println("Addition (10 + 5): " + calculator.add(10, 5));
+```
+
+**Network Flow**:
+```
+Client Code:
+calculator.add(10, 5)
+    ↓
+Stub received method call
+    ↓
+Stub marshals (CDR encoding):
+    Method: "add"
+    Parameters: [10.0, 5.0]
+    ↓
+Stub creates IIOP packet
+    ↓
+Send over TCP/IP to localhost:1050
+    ↓
+┌──────────────────────────────────┐
+│     SERVER SIDE - localhost       │
+│     IIOP packet arrives           │
+└──────────────────────────────────┘
+    ↓
+POA skeleton receives packet
+    ↓
+Skeleton unmarshals:
+    Method: "add"
+    Parameters: [10.0, 5.0]
+    ↓
+Skeleton calls servant:
+    CalculatorImpl.add(10.0, 5.0)
+    ↓
+Actual execution:
+    10.0 + 5.0 = 15.0
+    ↓
+Result ready: 15.0
+    ↓
+Skeleton marshals result (CDR):
+    Value: 15.0
+    ↓
+Skeleton creates response IIOP packet
+    ↓
+Send back over TCP/IP to client
+    ↓
+┌──────────────────────────────────┐
+│     CLIENT SIDE AGAIN             │
+│     Response packet arrives       │
+└──────────────────────────────────┘
+    ↓
+Stub receives response packet
+    ↓
+Stub unmarshals:
+    Result: 15.0
+    ↓
+Stub returns value to code:
+    result = 15.0
+    ↓
+println displays: "Addition (10 + 5): 15.0"
+```
+
+**Operation 2: Subtraction & Multiplication**
+```java
+System.out.println("Subtraction (10 - 5): " + calculator.subtract(10, 5));
+System.out.println("Multiplication (10 * 5): " + calculator.multiply(10, 5));
+```
+
+**Same process as addition**:
+- Stub marshals parameters
+- Sends IIOP packet to server
+- Server executes method
+- Response sent back
+- Client unmarshals and displays
+
+**Operation 3: Division with Exception**
+```java
+try {
+    System.out.println("Division (10 / 2): " + calculator.divide(10, 2));
+    System.out.println("Division (10 / 0): " + calculator.divide(10, 0));
+} catch (DivisionByZero e) {
+    System.out.println("Error: Division by zero is not allowed!");
+}
+```
+
+**First Division (10 / 2) - Success**:
+```
+Network flow: Same as addition
+Server executes: 10 / 2 = 5.0
+Response: 5.0
+Client displays: "Division (10 / 2): 5.0"
+```
+
+**Second Division (10 / 0) - Exception**:
+```
+Client stub sends request:
+    Method: "divide"
+    Parameters: [10.0, 0.0]
+    ↓
+Server skeleton unmarshals and calls:
+    CalculatorImpl.divide(10.0, 0.0)
+    ↓
+Server-side execution:
+    if (b == 0)  // TRUE
+        throw new DivisionByZero()
+    ↓
+Exception thrown on server
+    ↓
+Skeleton catches exception:
+    Type: DivisionByZero
+    ↓
+Skeleton marshals exception:
+    Exception type: DivisionByZero
+    Exception fields: (none in this case)
+    ↓
+Skeleton creates exception response packet
+    ↓
+Send exception packet to client over IIOP
+    ↓
+Client stub receives exception packet
+    ↓
+Stub unmarshals exception:
+    Exception type: DivisionByZero
+    ↓
+Stub throws exception:
+    throw new DivisionByZero()
+    ↓
+Client code catches:
+    catch (DivisionByZero e) {...}
+    ↓
+Display: "Error: Division by zero is not allowed!"
+```
+
+**Key Insight**: Exception thrown on server, serialized, transmitted over network, and re-thrown on client!
+
+---
+
+## 🔄 COMPLETE CORBA EXECUTION FLOW
+
+### **Setup & Compilation**
+
+**Step 1: Compile IDL**
+```bash
+cd e:\DISTRIBUTED SYSTEMS\FINAL\2_CORBA
+idlj -fall Calculator.idl
+```
+
+**Generated Files**:
+```
+CalculatorApp/
+  ├─ Calculator.java (interface)
+  ├─ CalculatorPOA.java (skeleton)
+  ├─ CalculatorHelper.java (helper)
+  ├─ CalculatorHolder.java (holder)
+  └─ DivisionByZero.java (exception)
+```
+
+**Step 2: Compile Java Files**
+```bash
+javac CalculatorApp/*.java *.java
+```
+
+**Step 3: Start CORBA Naming Service (ORBD)**
+```bash
+orbd -ORBInitialPort 1050 -ORBInitialHost localhost
+```
+
+**What ORBD does**:
+```
+1. Starts Object Request Broker Daemon
+2. Initializes NameService on port 1050
+3. Waits for client and server connections
+4. Handles service registration and lookup
+5. Message broker for IIOP protocol
+```
+
+**Step 4: Start Server (New Terminal)**
+```bash
+java CalculatorServer -ORBInitialPort 1050 -ORBInitialHost localhost
+```
+
+**Server Startup Sequence**:
+```
+1. java CalculatorServer runs
+2. ORB.init() initializes
+3. POA obtained and activated
+4. CalculatorImpl created
+5. Servant registered with POA
+6. Object reference created
+7. Naming Service contacted
+8. Object registered as "Calculator"
+9. Server prints: "Calculator Server is running..."
+10. orb.run() starts event loop
+11. Server waits for client requests
+```
+
+**Step 5: Start Client (New Terminal)**
+```bash
+java CalculatorClient -ORBInitialPort 1050 -ORBInitialHost localhost
+```
+
+**Client Execution Sequence**:
+```
+1. java CalculatorClient runs
+2. ORB.init() initializes with same configuration
+3. Naming Service contacted
+4. "Calculator" object looked up
+5. Remote reference received
+6. Stub created locally
+7. First operation: add(10, 5)
+   - Sent to server
+   - Executed: 10 + 5 = 15
+   - Result: 15.0
+8. Second operation: subtract(10, 5)
+   - Result: 5.0
+9. Third operation: multiply(10, 5)
+   - Result: 50.0
+10. Fourth operation: divide(10, 2)
+    - Result: 5.0
+11. Fifth operation: divide(10, 0)
+    - Exception thrown on server
+    - Caught on client
+    - Error message displayed
+12. Client program terminates
+```
+
+---
+
+## 📊 CORBA Communication Overview
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                  CORBA COMMUNICATION LAYERS              │
+├──────────────────────────────────────────────────────────┤
+│                                                          │
+│  APPLICATION LAYER                                       │
+│  (Your code: client.add(10, 5) or server.divide(x,y))   │
+│         ↑                                ↑              │
+│         │ Marshalling              Unmarshalling        │
+│         ↓                                ↓              │
+│                                                          │
+│  CORBA LAYER                                             │
+│  Stubs (client)  ←→  POA/Skeletons (server)             │
+│  Type narrowing, object references, method dispatch     │
+│         ↑                                ↑              │
+│         │ GIOP (General Inter-ORB Protocol)             │
+│         ↓                                ↓              │
+│                                                          │
+│  TRANSPORT LAYER                                         │
+│  IIOP (Internet Inter-ORB Protocol)                      │
+│  TCP/IP sockets, network transmission                    │
+│  Default port: 1050                                      │
+│         ↑                                ↑              │
+│         │ Binary (CDR format)                            │
+│         ↓                                ↓              │
+│                                                          │
+│  NETWORK LAYER                                           │
+│  TCP/IP protocol, routers, switches                      │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🎯 KEY DIFFERENCES: CORBA vs RMI
+
+| Aspect | CORBA | RMI |
+|--------|-------|-----|
+| **Language Support** | C++, Java, Python, C#, ... | Java only |
+| **Platform Independence** | OS independent | OS independent (via JVM) |
+| **Interface Definition** | IDL (separate language) | Java interfaces |
+| **Compilation** | IDL → compiler generates code | Direct Java compilation |
+| **Service Discovery** | CORBA Naming Service | RMI Registry |
+| **Default Port** | 1050 (IIOP) | 1099 |
+| **Marshalling Format** | CDR (binary) | Java serialization |
+| **Network Protocol** | IIOP (standardized) | Custom RMI protocol |
+| **Learning Curve** | Steep | Easy |
+| **Scalability** | Enterprise scale | Medium scale |
+| **Industry Adoption** | Legacy systems | Declining |
+| **Best For** | Heterogeneous enterprise | Java-to-Java |
+
+---
+
+## 🎯 KEY TAKEAWAYS
+
+### **CORBA Advantages**:
+1. ✅ Language-independent (Java, C++, Python, C#)
+2. ✅ Platform-independent
+3. ✅ Industry standard (OMG specification)
+4. ✅ Mature technology (proven in enterprise)
+5. ✅ Hierarchical naming service
+6. ✅ Strong exception handling
+
+### **CORBA Limitations**:
+1. ❌ Steep learning curve
+2. ❌ Complex setup (IDL, compilation, ORB)
+3. ❌ Slower than RMI
+4. ❌ Network overhead (GIOP/IIOP)
+5. ❌ Declining industry adoption
+6. ❌ Verbose code
+
+### **When to Use CORBA**:
+- Legacy system integration
+- Multi-language distributed systems
+- C++ and Java interoperability
+- Enterprise-scale systems
+- When language independence is critical
+
+### **When NOT to Use CORBA**:
+- New projects (prefer gRPC/REST)
+- Microservices (use REST/gRPC)
+- Web applications (use REST APIs)
+- High-frequency systems (latency-sensitive)
+- Simple Java-to-Java communication (use RMI)
+
+---
+
+## 📝 PRACTICE QUESTIONS
+
+1. Why is IDL necessary in CORBA but not in RMI?
+2. What is the difference between IIOP and the RMI protocol?
+3. How does the ORB handle method dispatch on the server side?
+4. Explain the role of the Naming Service in CORBA.
+5. How would you design a CORBA interface for a distributed file system?
+6. What happens if the Naming Service goes down in a CORBA system?
+7. How would you handle versioning of CORBA interfaces?
+8. Design a CORBA system that integrates Java and C++ components.
+9. How would you secure a CORBA application?
+10. Explain the complete call stack when a CORBA method is invoked.
+
+---
+
+## 📚 COMPILATION & EXECUTION COMMANDS
+
+```bash
+# Step 1: Navigate to CORBA directory
+cd "e:\DISTRIBUTED SYSTEMS\FINAL\2_CORBA"
+
+# Step 2: Compile IDL to generate Java files
+idlj -fall Calculator.idl
+
+# Step 3: Compile all Java files
+javac CalculatorApp/*.java *.java
+
+# Step 4: Open Terminal 1 (Start CORBA Naming Service)
+orbd -ORBInitialPort 1050 -ORBInitialHost localhost
+
+# Step 5: Open Terminal 2 (Start Server)
+java CalculatorServer -ORBInitialPort 1050 -ORBInitialHost localhost
+
+# Step 6: Open Terminal 3 (Run Client)
+java CalculatorClient -ORBInitialPort 1050 -ORBInitialHost localhost
+
+# Expected output on client:
+# Addition (10 + 5): 15.0
+# Subtraction (10 - 5): 5.0
+# Multiplication (10 * 5): 50.0
+# Division (10 / 2): 5.0
+# Error: Division by zero is not allowed!
+```
+
+---
+
+**Document Version**: 1.0  
+**Last Updated**: May 6, 2026  
+**Practical**: 2_CORBA - Common Object Request Broker Architecture
+
+*/

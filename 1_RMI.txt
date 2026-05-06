@@ -1,0 +1,1709 @@
+//ArithmeticClient.java
+
+import java.rmi.Naming;
+import java.util.Scanner;
+
+public class ArithmeticClient {
+    public static void main(String[] args) {
+        try {
+            ArithmeticService arithmeticService =
+                (ArithmeticService) Naming.lookup(
+                    "rmi://localhost/ArithmeticService"
+                );
+
+            Scanner scanner = new Scanner(System.in);
+
+            System.out.print("Enter the first number: ");
+            double num1 = scanner.nextDouble();
+
+            System.out.print("Enter the second number: ");
+            double num2 = scanner.nextDouble();
+
+            System.out.println("\nChoose an operation:");
+            System.out.println("1. Add");
+            System.out.println("2. Subtract");
+            System.out.println("3. Multiply");
+            System.out.println("4. Divide");
+            System.out.print("Enter your choice (1-4): ");
+            int choice = scanner.nextInt();
+
+            double result = 0;
+            switch (choice) {
+                case 1: result = arithmeticService.add(num1, num2); break;
+                case 2: result = arithmeticService.subtract(num1, num2); break;
+                case 3: result = arithmeticService.multiply(num1, num2); break;
+                case 4: result = arithmeticService.divide(num1, num2); break;
+                default:
+                    System.out.println("Invalid choice");
+                    return;
+            }
+
+            System.out.println("Result: " + result);
+            scanner.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+
+//ArithmeticServer.java
+
+import java.rmi.Naming;
+import java.rmi.registry.LocateRegistry;
+
+public class ArithmeticServer {
+    public static void main(String[] args) {
+        try {
+            // Start RMI registry on default port 1099
+            LocateRegistry.createRegistry(1099);
+
+            ArithmeticServiceImpl arithmeticService = new ArithmeticServiceImpl();
+
+            // Bind service
+            Naming.rebind("rmi://localhost/ArithmeticService", arithmeticService);
+
+            System.out.println("Arithmetic Server is ready...");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+
+
+
+// ArithmeticService.java
+
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+
+public interface ArithmeticService extends Remote {
+    double add(double a, double b) throws RemoteException;
+    double subtract(double a, double b) throws RemoteException;
+    double multiply(double a, double b) throws RemoteException;
+    double divide(double a, double b) throws RemoteException;
+}
+
+
+//ArithmeticServiceImpl.java
+
+// Source code is decompiled from a .class file using FernFlower decompiler (from Intellij IDEA).
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+
+public class ArithmeticServiceImpl extends UnicastRemoteObject implements ArithmeticService {
+   public ArithmeticServiceImpl() throws RemoteException {
+   }
+
+   public double add(double var1, double var3) throws RemoteException {
+      return var1 + var3;
+   }
+
+   public double subtract(double var1, double var3) throws RemoteException {
+      return var1 - var3;
+   }
+
+   public double multiply(double var1, double var3) throws RemoteException {
+      return var1 * var3;
+   }
+
+   public double divide(double var1, double var3) throws RemoteException {
+      if (var3 == 0.0) {
+         throw new RemoteException("Cannot divide by zero");
+      } else {
+         return var1 / var3;
+      }
+   }
+}
+
+
+RUN:
+// javac *.java
+// rmiregistry
+
+// new terminal:
+// java ArithmeticServer
+
+// new terminal:
+// java ArithmeticClient
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Library	Usage
+java.rmi.Naming	Used to bind and lookup remote RMI objects
+java.util.Scanner	Used to take user input from keyboard
+java.rmi.registry.LocateRegistry	Used to create/start the RMI registry
+java.rmi.Remote	Used to mark an interface as a remote interface
+java.rmi.RemoteException	Used to handle remote/network communication errors
+java.rmi.server.UnicastRemoteObject	Used to make objects remotely accessible in RMI
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+# Distributed Systems Practicals - Solutions & Documentation
+
+## 📌 FOLDER 1: RMI (Remote Method Invocation)
+
+---
+
+## 🎓 ORAL EXAM QUESTIONS WITH ANSWERS
+
+### Basic Level Questions
+1. **What is RMI and why is it used in distributed systems?**
+   
+   **Answer**: 
+   RMI (Remote Method Invocation) is a Java API that allows a program in one JVM to call methods on an object in another JVM over a network. It's used in distributed systems because:
+   - Enables Java-to-Java communication across machines
+   - Object-oriented approach (works with objects, not just procedures)
+   - Type-safe (compile-time checking)
+   - Simplifies distributed programming by hiding network complexity
+   - Automatic serialization of Java objects
+   
+   Use cases: Microservices, distributed banking, collaborative applications, distributed computing.
+
+2. **What are the key components of RMI architecture?**
+   
+   **Answer**:
+   - **Client**: Application that initiates remote method calls
+   - **Stub**: Proxy on client side that serializes parameters and sends request
+   - **Skeleton**: Proxy on server side that deserializes request and invokes method
+   - **Server**: Application hosting the remote object
+   - **RMI Registry**: Naming service (acts like a directory) for locating remote objects
+   - **Network**: TCP/IP connection between client and server
+   - **Remote Interface**: Defines contract for remote methods
+
+3. **Explain the difference between local and remote method invocation.**
+   
+   **Answer**:
+   - **Local**: Directly calls method in same JVM, same address space, no network delay
+   - **Remote**: Calls method through stub→network→skeleton, in different JVM, different machine, has network latency and serialization overhead
+   - Local: `result = obj.add(5, 3);` (fast, ~microseconds)
+   - Remote: `result = remoteObj.add(5, 3);` (slow, ~milliseconds), actual execution on different machine
+
+4. **What is a Remote Interface in RMI? Why must it extend Remote?**
+   
+   **Answer**:
+   - **Remote Interface**: Specifies which methods can be called remotely (acts as contract)
+   - Must extend `Remote` interface (marker interface) to indicate it's remotely callable
+   - All methods must throw `RemoteException` to account for network failures
+   - Example:
+     ```java
+     public interface Calculator extends Remote {
+         int add(int a, int b) throws RemoteException;
+     }
+     ```
+   - Compiler generates stubs/skeletons based on this interface
+   - Type safety: Only methods declared in Remote interface can be called remotely
+
+5. **What is the role of RMI Registry?**
+   
+   **Answer**:
+   RMI Registry is a naming service that acts as a directory:
+   - Server binds objects: `Naming.rebind("rmi://host/name", object);`
+   - Client looks up objects: `Naming.lookup("rmi://host/name");`
+   - Returns stub proxy to client
+   - Default port: 1099
+   - Must run as separate process (via `rmiregistry` command)
+   - Single point of reference for all clients finding services
+
+### Intermediate Level Questions
+6. **Explain the difference between Naming.lookup() and Naming.rebind().**
+   
+   **Answer**:
+   - **Naming.lookup()** (Client-side):
+     ```java
+     Calculator calc = (Calculator) Naming.lookup("rmi://localhost/CalculatorService");
+     ```
+     Retrieves stub proxy from RMI Registry. Returns object reference to client. Throws `NotBoundException` if not found.
+   
+   - **Naming.rebind()** (Server-side):
+     ```java
+     Naming.rebind("rmi://localhost/CalculatorService", serviceImpl);
+     ```
+     Registers service with RMI Registry. Overwrites if already exists. Allows clients to find the service.
+   
+   Key difference: lookup() retrieves, rebind() registers
+
+7. **What are Stubs and Skeletons in RMI? How do they facilitate communication?**
+   
+   **Answer**:
+   - **Stub** (Client-side proxy):
+     - Implements remote interface
+     - Intercepts method calls
+     - Serializes parameters (marshalling)
+     - Sends request to server over network
+     - Deserializes response (unmarshalling)
+     - Returns result to client
+     - Looks like local object to client application
+   
+   - **Skeleton** (Server-side proxy):
+     - Receives serialized request
+     - Deserializes parameters
+     - Calls actual method on servant
+     - Serializes result
+     - Sends response back to stub
+   
+   They hide network complexity!
+
+8. **Why must remote methods throw RemoteException?**
+   
+   **Answer**:
+   Remote methods must throw `RemoteException` because:
+   - Network can fail (connection timeout, packet loss)
+   - Serialization can fail (non-serializable object)
+   - Remote server can crash
+   - RMI Registry unavailable
+   - Network latency unpredictable
+   
+   `RemoteException` is checked exception → Forces programmer to handle network failures explicitly. Makes distributed nature explicit in API.
+
+9. **What is UnicastRemoteObject and why do we extend it?**
+   
+   **Answer**:
+   `UnicastRemoteObject`:
+   - Base class for remote objects
+   - Provides RMI functionality to our implementation
+   - Handles serialization/deserialization
+   - Manages network communication
+   - Creates stub and skeleton automatically
+   
+   Why extend it:
+   ```java
+   public class CalculatorImpl extends UnicastRemoteObject implements Calculator
+   ```
+   - Automatically becomes a remote object
+   - Constructor must throw RemoteException (to account for network initialization)
+   - Enables method invocation from remote clients
+   - Alternative: Implement Serializable and use explicit RMI methods (less common)
+
+10. **How does the RMI Registry work? On which port does it run by default?**
+    
+    **Answer**:
+    - Default port: **1099**
+    - Registry is a lookup service that maintains mappings:
+      ```
+      "rmi://host/ServiceName" ← → Remote Object Reference
+      ```
+    - Server registers service: `Naming.rebind("rmi://localhost/Service", obj)`
+    - Client finds service: `Naming.lookup("rmi://localhost/Service")`
+    - Registry can run:
+      - As separate process: `rmiregistry 1099`
+      - Embedded in JVM: `LocateRegistry.createRegistry(1099)`
+    - If registry unavailable → clients cannot locate services (but can call if they have reference)
+
+### Advanced Level Questions
+11. **Explain the marshalling and unmarshalling process in RMI.**
+    
+    **Answer**:
+    **Marshalling** (Serialization):
+    - Convert Java objects → byte stream for network transmission
+    - Client stub marshals: parameters, method name, object reference
+    - Uses Java serialization (objects must implement Serializable)
+    - Encoding: Each object serialized with type information
+    
+    **Unmarshalling** (Deserialization):
+    - Convert byte stream → Java objects on receiving end
+    - Server skeleton unmarshals: extracts parameters, method name
+    - Reconstructs Java objects from bytes
+    - Validates type safety
+    
+    Process flow:
+    ```
+    Stub.add(5, 3) 
+    → Serialize [5, 3] as bytes 
+    → Network transmission 
+    → Deserialize to int,int 
+    → Skeleton.execute(5, 3)
+    ```
+
+12. **What happens when a client calls a remote method?**
+    
+    **Answer**:
+    Complete flow:
+    ```
+    1. Client calls: result = stub.add(5, 3)
+    2. Stub intercepts call
+    3. Stub serializes: method="add", params=[5,3]
+    4. Stub creates request packet with:
+       - Method name
+       - Parameter values
+       - Object reference (which remote object)
+    5. Stub sends over TCP/IP to server
+    6. Server skeleton receives packet
+    7. Skeleton deserializes: extracts method, params
+    8. Skeleton calls actual method: int result = impl.add(5, 3)
+    9. Method executes on server: 5 + 3 = 8
+    10. Skeleton serializes result: 8
+    11. Skeleton sends response back
+    12. Stub receives response
+    13. Stub deserializes: result = 8
+    14. Stub returns to client: result = 8
+    15. Client continues with result
+    ```
+    Entire process transparent to client code!
+
+13. **What are the security considerations in RMI?**
+    
+    **Answer**:
+    Security issues in RMI:
+    - **Authentication**: Who is calling the remote method?
+    - **Authorization**: Is this user allowed to call this method?
+    - **Encryption**: Is network traffic encrypted?
+    - **Code injection**: Can untrusted objects be deserialized?
+    
+    Security measures:
+    - Security Manager: Controls what RMI code can do
+    - Policy files: Grant permissions (like file access)
+    - SSL/TLS: Encrypted IIOP (IIOPS)
+    - Serialization filters: Restrict deserialization of untrusted classes
+    - Object signing: Verify object authenticity
+    
+    Example policy:
+    ```
+    permission java.net.SocketPermission "localhost:1099", "connect,accept";
+    ```
+
+14. **How would you handle exceptions in a distributed RMI system?**
+    
+    **Answer**:
+    Exception handling strategy:
+    - **Checked exceptions** (server) → **RemoteException** (client)
+    - Custom exceptions must extend Exception (serializable)
+    - Server-side exception is caught, serialized, sent to client
+    - Client deserializes and re-throws
+    
+    Example:
+    ```java
+    // Server
+    public int divide(int a, int b) throws RemoteException {
+        if (b == 0) throw new ArithmeticException("Divide by zero");
+        return a / b;
+    }
+    
+    // Client
+    try {
+        result = calc.divide(10, 0);
+    } catch (RemoteException e) {
+        System.out.println("Network error: " + e);
+    } catch (ArithmeticException e) {
+        System.out.println("Server error: " + e);
+    }
+    ```
+    
+    Best practices:
+    - Always catch RemoteException (network issues)
+    - Log exceptions with timestamp
+    - Implement retry logic for transient failures
+    - Never silently ignore exceptions
+
+15. **What is the difference between Naming.rebind() and Naming.bind()?**
+    
+    **Answer**:
+    - **Naming.bind()**:
+      ```java
+      Naming.bind("rmi://localhost/Service", obj);
+      ```
+      Fails if name already registered (throws AlreadyBoundException)
+      Use when you know service is new
+    
+    - **Naming.rebind()**:
+      ```java
+      Naming.rebind("rmi://localhost/Service", obj);
+      ```
+      Overwrites if name already registered (idempotent)
+      Use in production (allows server restart without cleanup)
+    
+    Recommendation: Use `rebind()` in production, `bind()` in testing
+
+### Scenario-Based Questions
+16. **Design an RMI-based banking system where clients can check balance and transfer money.**
+    
+    **Answer**:
+    ```java
+    // Remote Interface
+    public interface BankService extends Remote {
+        double getBalance(String accountId) throws RemoteException;
+        boolean transfer(String fromId, String toId, double amount) 
+            throws RemoteException, InsufficientFundsException;
+    }
+    
+    // Implementation
+    public class BankServiceImpl extends UnicastRemoteObject implements BankService {
+        private Map<String, Double> accounts = new ConcurrentHashMap<>();
+        
+        public synchronized double getBalance(String accountId) throws RemoteException {
+            return accounts.getOrDefault(accountId, 0.0);
+        }
+        
+        public synchronized boolean transfer(String fromId, String toId, double amount) 
+            throws RemoteException, InsufficientFundsException {
+            double balance = accounts.get(fromId);
+            if (balance < amount) throw new InsufficientFundsException();
+            accounts.put(fromId, balance - amount);
+            accounts.put(toId, accounts.get(toId) + amount);
+            return true;
+        }
+    }
+    ```
+    Key design points:
+    - Use synchronized/ConcurrentHashMap for thread safety
+    - Custom exception for business logic
+    - Server maintains account state
+    - Client never modifies state directly
+
+17. **How would you implement a distributed calculator service?**
+    
+    **Answer**:
+    Already implemented in this practical! To extend it:
+    
+    Multiple server instances with load balancing:
+    ```java
+    // Create multiple servers on different ports
+    java CalculatorServer -ORBInitialPort 1100
+    java CalculatorServer -ORBInitialPort 1101
+    java CalculatorServer -ORBInitialPort 1102
+    
+    // Client-side load balancer
+    Random rand = new Random();
+    int port = 1100 + rand.nextInt(3);  // Random between 1100-1102
+    Calculator calc = (Calculator) Naming.lookup(
+        "rmi://localhost:" + port + "/CalculatorService"
+    );
+    ```
+    
+    Benefits: Distribute load, fault tolerance (if one fails, others work)
+
+18. **What happens if the RMI Registry goes down?**
+    
+    **Answer**:
+    Scenario breakdown:
+    ```
+    Existing clients:
+    ├─ Can continue working (they have stub reference)
+    ├─ But new clients can't lookup
+    └─ Service becomes unavailable to new clients
+    
+    New clients trying to connect:
+    ├─ Naming.lookup() fails with ConnectException
+    ├─ Cannot proceed
+    └─ Need manual retry or fallback
+    ```
+    
+    Solutions:
+    1. **High availability**: Multiple registry instances with failover
+    2. **Backup registry**: Pre-configured fallback registry address
+    3. **Embedded registry**: Each server has its own registry on different port
+    4. **Service mesh**: Use Kubernetes/Consul instead of RMI Registry
+    5. **Persistent lookup cache**: Cache addresses locally
+
+19. **How would you ensure data consistency in an RMI-based distributed system?**
+    
+    **Answer**:
+    Consistency strategies:
+    
+    1. **Pessimistic Locking**:
+       ```java
+       synchronized method to prevent concurrent access
+       Lock on server side during operation
+       ```
+    
+    2. **Optimistic Locking**:
+       ```java
+       Version numbers on objects
+       Detect conflicts on update
+       Retry if version mismatch
+       ```
+    
+    3. **Two-Phase Commit** (transactions):
+       ```
+       Phase 1: Prepare (all servers ready?)
+       Phase 2: Commit (all servers execute)
+       Rollback if any server says "no"
+       ```
+    
+    4. **Replication**:
+       ```
+       Write to primary server
+       Primary replicates to backup servers
+       Read from any replica
+       ```
+    
+    5. **Distributed Transactions**:
+       ```java
+       Use JTA (Java Transaction API)
+       ACID properties across multiple servers
+       ```
+
+20. **Explain the difference between RMI and RPC. Why is RMI preferred in Java?**
+    
+    **Answer**:
+    
+    | Feature | RMI | RPC |
+    |---------|-----|-----|
+    | **Language** | Java only | Language-agnostic (C, Go, etc) |
+    | **Object Support** | Full object support | Struct/primitive types |
+    | **Type Safety** | Compile-time checked | Runtime checked |
+    | **Parameter Passing** | By value/reference | By value (simple) |
+    | **Learning Curve** | Easy (Java-like) | Moderate |
+    | **Data Encoding** | Java serialization | Standardized (XML, JSON) |
+    | **Performance** | Java-optimized | Generic |
+    | **Use Case** | Java systems | Heterogeneous systems |
+    
+    Why RMI preferred in Java:
+    - Object-oriented (passes objects, not just primitives)
+    - Type-safe (catch errors at compile time)
+    - Familiar to Java developers (looks like local calls)
+    - Automatic serialization (no manual marshalling)
+    - Integrated with Java ecosystem
+
+---
+
+## 🔧 DISTRIBUTED SYSTEMS CONCEPTS & THEORY
+
+### 1. **Remote Method Invocation (RMI)**
+
+#### **Definition**
+Remote Method Invocation is a Java API that allows a Java program running in one JVM to invoke methods on an object existing in another JVM over a network.
+
+#### **Why RMI?**
+- **Language-specific**: Designed for Java-to-Java communication
+- **Object-oriented**: Works with objects, not just procedures
+- **Type-safe**: Compile-time type checking
+- **Automatic serialization**: Java handles data serialization
+- **Simplicity**: Hides network complexity from developer
+
+#### **When to Use RMI?**
+✅ Java-to-Java distributed systems
+✅ Microservices architecture
+✅ Distributed banking systems
+✅ Real-time collaborative applications
+✅ Distributed computing clusters
+
+❌ Heterogeneous systems (use REST/gRPC instead)
+❌ Web applications (use REST APIs)
+❌ Real-time heavy computations
+
+#### **How RMI Works - Step by Step**
+```
+1. Client Stub Creation
+   ↓
+2. Stub serializes method call and parameters
+   ↓
+3. Network transmission to Server
+   ↓
+4. Server Skeleton receives request
+   ↓
+5. Skeleton deserializes and invokes actual method
+   ↓
+6. Method executes on server
+   ↓
+7. Result serialized and sent back
+   ↓
+8. Client Stub deserializes result
+   ↓
+9. Result returned to client application
+```
+
+#### **RMI Architecture Components**
+
+| Component | Role | Location |
+|-----------|------|----------|
+| **Remote Interface** | Defines methods available for remote invocation | Both |
+| **Implementation Class** | Actual implementation of remote interface | Server |
+| **Stub** | Proxy on client side; serializes and sends request | Client |
+| **Skeleton** | Proxy on server side; deserializes and invokes method | Server |
+| **RMI Registry** | Naming service for locating remote objects | Separate process |
+| **Client** | Looks up remote object and invokes methods | Client Machine |
+| **Server** | Creates and registers remote objects | Server Machine |
+
+#### **Example: Arithmetic Calculator**
+```java
+// Remote Interface (Both sides)
+public interface ArithmeticService extends Remote {
+    double add(double a, double b) throws RemoteException;
+}
+
+// Server Implementation
+public class ArithmeticServiceImpl extends UnicastRemoteObject 
+    implements ArithmeticService {
+    public double add(double a, double b) throws RemoteException {
+        return a + b;
+    }
+}
+
+// Server Registration
+ArithmeticServiceImpl service = new ArithmeticServiceImpl();
+Naming.rebind("rmi://localhost/ArithmeticService", service);
+
+// Client Lookup and Invocation
+ArithmeticService service = 
+    (ArithmeticService) Naming.lookup("rmi://localhost/ArithmeticService");
+double result = service.add(5, 3); // Network call!
+```
+
+#### **Related Questions**
+- What is serialization and why is it needed in RMI?
+- How does Java handle passing objects as parameters in RMI?
+- Can you pass non-serializable objects in RMI?
+- Difference between by-value and by-reference passing in RMI?
+
+---
+
+### 2. **Distributed Systems Concepts Used in RMI**
+
+#### **A. Client-Server Architecture**
+**Definition**: Two-tier architecture where clients request services from centralized servers.
+
+**In RMI Context**:
+- **Server**: Hosts remote objects and services
+- **Client**: Invokes methods on remote objects
+- **Network**: Enables communication
+
+**Advantages**:
+- Centralized resource management
+- Easy to maintain and update
+- Scalable
+
+**Challenges**:
+- Single point of failure
+- Performance bottleneck at server
+- Network latency
+
+**Example in our code**:
+```
+ArithmeticServer runs on server machine
+ArithmeticClient connects to it
+Server provides arithmetic services
+```
+
+---
+
+#### **B. Network Communication & Transparency**
+**Definition**: The process of data transmission over network while hiding complexity from the application.
+
+**Mechanisms in RMI**:
+1. **TCP/IP Socket Communication**: Default transport protocol
+2. **Serialization**: Convert Java objects to byte stream
+3. **Marshalling/Unmarshalling**: Packing and unpacking data
+4. **Stub-Skeleton Proxy Pattern**: Hides network details
+
+**Transparency Levels**:
+- **Access Transparency**: Local and remote calls look the same
+- **Location Transparency**: Client doesn't know server location
+- **Network Transparency**: Network details hidden
+
+---
+
+#### **C. Naming & Service Discovery**
+**Definition**: Mechanism to locate and access remote services.
+
+**In RMI**:
+- **RMI Registry**: Centralized naming service
+- **Binding**: Registering service (server-side)
+- **Lookup**: Finding service (client-side)
+
+**Process**:
+```
+1. Server creates remote object
+2. Server registers it in RMI Registry: 
+   Naming.rebind("rmi://host/ServiceName", remoteObject)
+3. Client queries RMI Registry:
+   Naming.lookup("rmi://host/ServiceName")
+4. Client receives stub proxy
+5. Client invokes methods through stub
+```
+
+**Default Port**: 1099
+
+**Related Concepts**:
+- Service discovery
+- Load balancing
+- Failover mechanisms
+
+---
+
+#### **D. Serialization & Marshalling**
+**Definition**: Process of converting Java objects into byte sequences for network transmission.
+
+**How It Works**:
+```
+Object → Serialization → Byte Stream → Network → 
+Byte Stream → Deserialization → Object
+```
+
+**Important Notes**:
+- All parameters and return values must be serializable
+- Use `Serializable` interface (marker interface)
+- `serialVersionUID` for version control
+
+**In RMI**:
+```java
+// Method with serializable parameters and return
+double add(double a, double b) throws RemoteException;
+// Primitives (int, double, boolean, etc.) are always serializable
+// Objects must implement Serializable interface
+```
+
+**Related Questions**:
+- What is the difference between Serializable and Externalizable?
+- How does Java handle version compatibility in serialization?
+- What happens if you send non-serializable object?
+
+---
+
+#### **E. Exceptions in Distributed Systems**
+**Definition**: Handling errors in asynchronous, unreliable network environment.
+
+**Types of Exceptions in RMI**:
+1. **RemoteException**: Base exception for all RMI failures
+   - Network connectivity issues
+   - Server crashes
+   - Serialization problems
+   
+2. **ConnectException**: Can't connect to remote object
+3. **MarshalException**: Problem serializing/deserializing data
+4. **UnmarshalException**: Problem deserializing received data
+
+**In Our Code**:
+```java
+// All remote methods must declare RemoteException
+double divide(double a, double b) throws RemoteException;
+
+// Server-side exception handling
+if (var3 == 0.0) {
+    throw new RemoteException("Cannot divide by zero");
+}
+
+// Client-side exception handling
+try {
+    double result = arithmeticService.add(num1, num2);
+} catch (RemoteException e) {
+    e.printStackTrace();
+}
+```
+
+**Best Practices**:
+- Always catch RemoteException
+- Implement retry logic for transient failures
+- Log exceptions for debugging
+- Never ignore network exceptions
+
+---
+
+#### **F. Concurrency & Thread Safety**
+**Definition**: Managing simultaneous requests from multiple clients.
+
+**Challenges**:
+- Multiple clients calling same remote object
+- Data race conditions
+- Deadlocks
+
+**Solutions**:
+1. Synchronize shared resources
+2. Use thread-safe collections
+3. Implement proper locking mechanisms
+
+**In RMI**:
+- Each client request handled in separate thread
+- Server must ensure thread safety
+- Remote objects must be thread-safe
+
+---
+
+### 3. **Java RMI Technology Details**
+
+#### **UnicastRemoteObject**
+**What it does**:
+- Implements Remote interface methods
+- Makes object available as remote service
+- Handles network communication details
+
+**Why extend it**:
+```java
+public class ArithmeticServiceImpl extends UnicastRemoteObject 
+    implements ArithmeticService {
+    // Automatically becomes a remote object
+}
+```
+
+#### **Remote Interface Requirements**
+1. Must extend `Remote` interface
+2. All methods must throw `RemoteException`
+3. All parameter types must be serializable or primitive
+4. All return types must be serializable or primitive
+
+#### **RMI Registry Commands**
+```bash
+# Start registry (usually in separate terminal)
+rmiregistry
+
+# Or specify port
+rmiregistry 1099
+```
+
+---
+
+## 💻 CODE WALKTHROUGH: 1_RMI
+
+### **File 1: ArithmeticService.java** (Remote Interface)
+
+```java
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+
+public interface ArithmeticService extends Remote {
+    double add(double a, double b) throws RemoteException;
+    double subtract(double a, double b) throws RemoteException;
+    double multiply(double a, double b) throws RemoteException;
+    double divide(double a, double b) throws RemoteException;
+}
+```
+
+**Line-by-line Explanation**:
+
+| Line | Code | Explanation |
+|------|------|-------------|
+| 1-2 | `import java.rmi.Remote;` `import java.rmi.RemoteException;` | Import RMI interfaces needed for remote communication |
+| 4 | `public interface ArithmeticService extends Remote` | Define remote interface; MUST extend Remote |
+| 5-8 | `double add/subtract/multiply/divide(...)` | Declare remote methods accessible from clients |
+| 5-8 | `throws RemoteException` | MANDATORY - indicates method can fail over network |
+
+**Key Points**:
+- ✅ This is a **contract** - specifies what methods remote objects must provide
+- ✅ Clients and servers both use this interface
+- ✅ Methods are remote-callable (server-side implementation runs on server)
+- ✅ `RemoteException` allows proper error handling for network failures
+
+---
+
+### **File 2: ArithmeticServiceImpl.java** (Remote Implementation)
+
+```java
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+
+public class ArithmeticServiceImpl extends UnicastRemoteObject 
+    implements ArithmeticService {
+    
+    public ArithmeticServiceImpl() throws RemoteException {
+    }
+
+    public double add(double var1, double var3) throws RemoteException {
+        return var1 + var3;
+    }
+
+    public double subtract(double var1, double var3) throws RemoteException {
+        return var1 - var3;
+    }
+
+    public double multiply(double var1, double var3) throws RemoteException {
+        return var1 * var3;
+    }
+
+    public double divide(double var1, double var3) throws RemoteException {
+        if (var3 == 0.0) {
+            throw new RemoteException("Cannot divide by zero");
+        } else {
+            return var1 / var3;
+        }
+    }
+}
+```
+
+**Step-by-Step Execution Flow**:
+
+#### **Class Declaration**
+```java
+public class ArithmeticServiceImpl extends UnicastRemoteObject 
+    implements ArithmeticService
+```
+- **`extends UnicastRemoteObject`**: Makes this object available as RMI remote object
+  - Registers object with RMI registry
+  - Handles serialization/deserialization
+  - Manages network communication
+  - Creates stub and skeleton automatically
+
+- **`implements ArithmeticService`**: Implements remote interface contract
+
+#### **Constructor**
+```java
+public ArithmeticServiceImpl() throws RemoteException {
+}
+```
+- **Must throw RemoteException**: Indicates construction can fail (network issues)
+- **Purpose**: Initialize remote object
+- **Called once per service instance**
+
+#### **Method Implementations**
+
+**1. `add()` Method**
+```
+Input: two double numbers → var1 (first), var3 (second)
+↓
+Execution: var1 + var3
+↓
+Return: Result double value
+↓
+Network Path: Client Stub → Network → Server Skeleton → Method → 
+             Result → Skeleton → Network → Client Stub → Client
+```
+
+**2. `subtract()` Method**
+```
+Similar to add, but: var1 - var3
+```
+
+**3. `multiply()` Method**
+```
+Similar to add, but: var1 * var3
+```
+
+**4. `divide()` Method** (Most Complex)
+```java
+if (var3 == 0.0) {
+    throw new RemoteException("Cannot divide by zero");
+} else {
+    return var1 / var3;
+}
+```
+
+**Execution Flow**:
+```
+1. Receive two numbers
+2. Check if divisor (var3) is zero
+3. If YES: Throw RemoteException (network-safe error)
+   - Exception serialized and sent to client
+   - Client receives and can handle it
+4. If NO: Perform division and return result
+```
+
+**Why Error Handling Here?**
+- Validates business logic on server
+- Throws RemoteException (can be serialized over network)
+- Client catches and handles appropriately
+- Prevents invalid operations before network transfer
+
+---
+
+### **File 3: ArithmeticServer.java** (Server Process)
+
+```java
+import java.rmi.Naming;
+import java.rmi.registry.LocateRegistry;
+
+public class ArithmeticServer {
+    public static void main(String[] args) {
+        try {
+            // Start RMI registry on default port 1099
+            LocateRegistry.createRegistry(1099);
+
+            ArithmeticServiceImpl arithmeticService = new ArithmeticServiceImpl();
+
+            // Bind service
+            Naming.rebind("rmi://localhost/ArithmeticService", arithmeticService);
+
+            System.out.println("Arithmetic Server is ready...");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+**Execution Flow - Step by Step**:
+
+#### **Step 1: Start RMI Registry**
+```java
+LocateRegistry.createRegistry(1099);
+```
+- **What happens**:
+  - Creates RMI Registry in the same JVM
+  - Listens on port 1099
+  - Ready to register/lookup services
+  
+- **Purpose**:
+  - Acts as naming service (like DNS)
+  - Stores mappings: Service Name → Remote Object
+
+- **Alternative**:
+  - Run separate `rmiregistry` process in different terminal
+  - Use port 1099 (default)
+
+- **Timing**:
+  - Usually done once before binding services
+  - If registry already running, exception caught (safe)
+
+#### **Step 2: Create Remote Object**
+```java
+ArithmeticServiceImpl arithmeticService = new ArithmeticServiceImpl();
+```
+- **What happens**:
+  - Instantiates the remote service implementation
+  - Constructor throws RemoteException if problems
+  - Object is now ready to serve requests
+
+#### **Step 3: Register with RMI Registry**
+```java
+Naming.rebind("rmi://localhost/ArithmeticService", arithmeticService);
+```
+- **What `rebind` does**:
+  - Creates mapping in RMI Registry
+  - Key: `"rmi://localhost/ArithmeticService"`
+  - Value: Remote object reference
+
+- **URL Breakdown**:
+  - `rmi://`: Protocol (RMI)
+  - `localhost`: Registry host
+  - `1099`: Default port (implicit, can be specified as `localhost:1099`)
+  - `ArithmeticService`: Service name
+
+- **Why `rebind` instead of `bind`?**:
+  - `rebind`: Overwrites if already exists (safe for restart)
+  - `bind`: Fails if already exists
+
+- **After this**:
+  - Clients can now find and use this service
+  - Service available globally to network
+
+#### **Step 4: Confirmation Message**
+```java
+System.out.println("Arithmetic Server is ready...");
+```
+- **Purpose**: Console confirmation that server started successfully
+
+#### **Step 5: Exception Handling**
+```java
+} catch (Exception e) {
+    e.printStackTrace();
+}
+```
+- **Why general Exception?**:
+  - Could be RemoteException (registry issues)
+  - Could be instantiation errors
+  - Better to catch all and log
+
+---
+
+### **File 4: ArithmeticClient.java** (Client Process)
+
+```java
+import java.rmi.Naming;
+import java.util.Scanner;
+
+public class ArithmeticClient {
+    public static void main(String[] args) {
+        try {
+            // Lookup and obtain remote service reference
+            ArithmeticService arithmeticService =
+                (ArithmeticService) Naming.lookup(
+                    "rmi://localhost/ArithmeticService"
+                );
+
+            Scanner scanner = new Scanner(System.in);
+
+            // Get first number
+            System.out.print("Enter the first number: ");
+            double num1 = scanner.nextDouble();
+
+            // Get second number
+            System.out.print("Enter the second number: ");
+            double num2 = scanner.nextDouble();
+
+            // Display menu
+            System.out.println("\nChoose an operation:");
+            System.out.println("1. Add");
+            System.out.println("2. Subtract");
+            System.out.println("3. Multiply");
+            System.out.println("4. Divide");
+            System.out.print("Enter your choice (1-4): ");
+            int choice = scanner.nextInt();
+
+            // Perform selected operation
+            double result = 0;
+            switch (choice) {
+                case 1: result = arithmeticService.add(num1, num2); break;
+                case 2: result = arithmeticService.subtract(num1, num2); break;
+                case 3: result = arithmeticService.multiply(num1, num2); break;
+                case 4: result = arithmeticService.divide(num1, num2); break;
+                default:
+                    System.out.println("Invalid choice");
+                    return;
+            }
+
+            // Display result
+            System.out.println("Result: " + result);
+            scanner.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+**Execution Flow - Step by Step**:
+
+#### **Step 1: Lookup Remote Service**
+```java
+ArithmeticService arithmeticService =
+    (ArithmeticService) Naming.lookup("rmi://localhost/ArithmeticService");
+```
+
+**What happens**:
+```
+1. Client creates lookup request
+   ↓
+2. Contacts RMI Registry on localhost:1099
+   ↓
+3. Registry searches for "ArithmeticService"
+   ↓
+4. Registry returns stub (proxy) object
+   ↓
+5. Stub cast to ArithmeticService interface
+   ↓
+6. Client can now use stub like local object
+```
+
+**Stub Object**:
+- Not the actual remote object
+- Proxy that forwards calls over network
+- Serializes parameters and sends to server
+- Deserializes results and returns to client
+- Handles all network communication transparently
+
+**Casting**: `(ArithmeticService)` 
+- Stub implements ArithmeticService interface
+- Type-safe - ensures correct interface
+
+**On Failure**:
+- If server not running: `java.rmi.NotBoundException`
+- If registry not running: `java.rmi.ConnectException`
+- Caught by catch block
+
+#### **Step 2: User Input**
+```java
+Scanner scanner = new Scanner(System.in);
+System.out.print("Enter the first number: ");
+double num1 = scanner.nextDouble();
+System.out.print("Enter the second number: ");
+double num2 = scanner.nextDouble();
+```
+
+**Purpose**:
+- Get operands from user
+- No network involvement yet
+- Local variables
+
+#### **Step 3: Display Menu**
+```java
+System.out.println("Choose an operation:");
+System.out.println("1. Add");
+System.out.println("2. Subtract");
+System.out.println("3. Multiply");
+System.out.println("4. Divide");
+System.out.print("Enter your choice (1-4): ");
+int choice = scanner.nextInt();
+```
+
+**Purpose**:
+- Present operation options
+- Get user's choice
+- Local operation
+
+#### **Step 4: Execute Remote Method**
+```java
+switch (choice) {
+    case 1: result = arithmeticService.add(num1, num2); break;
+    case 2: result = arithmeticService.subtract(num1, num2); break;
+    case 3: result = arithmeticService.multiply(num1, num2); break;
+    case 4: result = arithmeticService.divide(num1, num2); break;
+    default:
+        System.out.println("Invalid choice");
+        return;
+}
+```
+
+**Network Communication Happens Here**:
+
+**Example: `arithmeticService.add(num1, num2)`**
+
+```
+CLIENT SIDE:
+1. Code calls arithmeticService.add(5, 3)
+2. This is STUB, not real object
+3. Stub serializes: method="add", params=[5.0, 3.0]
+4. Stub creates request packet
+5. Stub sends over network to server (localhost:1099)
+
+SERVER SIDE:
+6. Skeleton receives request packet
+7. Skeleton deserializes: method="add", params=[5.0, 3.0]
+8. Skeleton calls REAL add() method: 5.0 + 3.0
+9. Real method returns: 8.0
+10. Skeleton serializes result: 8.0
+11. Skeleton sends response packet back to client
+
+CLIENT SIDE:
+12. Stub receives response packet
+13. Stub deserializes: 8.0
+14. Stub returns value to calling code
+15. result = 8.0 (looks like local call!)
+```
+
+**Key Point**: 
+- Code looks like local method call
+- Actually network round-trip happened
+- Network delays, failures possible here
+- RemoteException can be thrown
+
+**Other Operations**:
+- `subtract`: Same process, server executes `var1 - var3`
+- `multiply`: Same process, server executes `var1 * var3`
+- `divide`: Same process, server checks division by zero
+
+#### **Step 5: Display Result**
+```java
+System.out.println("Result: " + result);
+scanner.close();
+```
+
+**Purpose**:
+- Show result to user
+- Close scanner (cleanup)
+- Program ends
+
+---
+
+## 🔄 COMPLETE RMI EXECUTION FLOW
+
+### **System Setup & Execution**
+
+**Terminal 1 - Compile**:
+```bash
+cd e:\DISTRIBUTED SYSTEMS\FINAL\1_RMI
+javac *.java
+# Generates: .class files for all Java files
+# Contains bytecode for JVM
+```
+
+**Terminal 2 - Start RMI Registry**:
+```bash
+rmiregistry
+# Listens on localhost:1099
+# Waits for service registrations
+# Waits for service lookups
+```
+
+**Terminal 3 - Start Server**:
+```bash
+java ArithmeticServer
+# Creates RMI Registry (alternative to separate rmiregistry)
+# Creates ArithmeticServiceImpl instance
+# Registers in registry as "rmi://localhost/ArithmeticService"
+# Outputs: "Arithmetic Server is ready..."
+# Waits for client requests
+```
+
+**Terminal 4 - Start Client**:
+```bash
+java ArithmeticClient
+# Looks up "ArithmeticService" from registry
+# Gets stub proxy
+# Prompts for first number
+# Prompts for second number
+# Shows operation menu
+# Sends operation request through stub
+# Receives result from server
+# Displays result
+# Exits
+```
+
+### **Complete Request-Response Cycle**
+
+```
+┌─────────────────┐
+│   CLIENT SIDE   │
+│    (Terminal 4) │
+└────────┬────────┘
+         │
+    1. User inputs: 10 and 5
+         │
+    2. User chooses: Add (1)
+         │
+         ▼
+    ┌─────────────────────┐
+    │   Stub.add(10, 5)   │
+    │  (Proxy Object)     │
+    └────────┬────────────┘
+             │
+         3. Serialization
+             │ - Method name: "add"
+             │ - Parameters: [10.0, 5.0]
+             │ - Convert to byte stream
+             │
+         4. Network Transmission
+             │ TCP/IP to localhost:1099
+             │
+             ▼
+┌────────────────────────────────────┐
+│       SERVER SIDE (Terminal 3)     │
+│    RMI Registry/Server Process     │
+└────────┬───────────────────────────┘
+         │
+    5. Skeleton receives bytes
+         │
+         ▼
+    ┌──────────────────────┐
+    │   Deserialization    │
+    │ - Method: add        │
+    │ - Params: [10, 5]    │
+    └────────┬─────────────┘
+             │
+         6. Method Invocation
+             │
+             ▼
+    ┌────────────────────────────────┐
+    │ ArithmeticServiceImpl.add()     │
+    │ return 10.0 + 5.0 = 15.0       │
+    └────────┬─────────────────────┘
+             │
+         7. Serialization of Result
+             │ byte stream: 15.0
+             │
+         8. Network Transmission
+             │ Send back to client
+             │
+             ▼
+┌────────────────────────────────────┐
+│       CLIENT SIDE AGAIN            │
+│    (Terminal 4)                    │
+└────────┬───────────────────────────┘
+         │
+    9. Stub receives bytes
+         │
+         ▼
+    10. Deserialization
+         │ Result: 15.0
+         │
+    11. Return to calling code
+         │
+         ▼
+    12. System.out.println("Result: 15.0")
+         │
+         ▼
+    13. Scanner.close()
+         │
+         ▼
+    14. Program terminates
+```
+
+---
+
+## 🎯 KEY TAKEAWAYS
+
+### **RMI Advantages**:
+1. ✅ Java-to-Java distributed communication
+2. ✅ Object-oriented approach
+3. ✅ Automatic serialization
+4. ✅ Network transparency
+5. ✅ Simple API
+
+### **RMI Limitations**:
+1. ❌ Java-only (not heterogeneous)
+2. ❌ Slower than local calls
+3. ❌ Network latency
+4. ❌ Scalability issues with single registry
+5. ❌ Deprecated in newer Java (use gRPC/REST)
+
+### **When RMI is NOT suitable**:
+- Heterogeneous systems
+- Web applications
+- Microservices (prefer REST/gRPC)
+- High-frequency trading systems
+- Mobile applications
+
+---
+
+## 📝 PRACTICE QUESTIONS
+
+1. Why must all remote methods throw `RemoteException`?
+2. What would happen if you don't start the RMI Registry?
+3. How would you modify the code to handle negative numbers?
+4. Design a remote file upload service using RMI.
+5. How would you add authentication to the RMI service?
+6. Explain what happens if network fails mid-method call.
+7. How to implement load balancing across multiple RMI servers?
+8. Design a distributed transaction system using RMI.
+9. How would you secure RMI communication?
+10. What's the difference between `Naming.bind()` and `Naming.rebind()`?
+
+---
+
+## 📚 COMPILATION & EXECUTION COMMANDS
+
+```bash
+# Step 1: Navigate to RMI directory
+cd "e:\DISTRIBUTED SYSTEMS\FINAL\1_RMI"
+
+# Step 2: Compile all Java files
+javac *.java
+
+# Step 3: Open Terminal 1 (Start Registry)
+rmiregistry
+
+# Step 4: Open Terminal 2 (Start Server)
+java ArithmeticServer
+
+# Step 5: Open Terminal 3 (Run Client)
+java ArithmeticClient
+
+# Expected output on client:
+# Enter the first number: 10
+# Enter the second number: 5
+# Choose an operation:
+# 1. Add
+# 2. Subtract
+# 3. Multiply
+# 4. Divide
+# Enter your choice (1-4): 1
+# Result: 15.0
+```
+
+---
+
+**Document Version**: 1.0  
+**Last Updated**: May 6, 2026  
+**Practical**: 1_RMI - Remote Method Invocation  
+*/
+

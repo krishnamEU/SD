@@ -1,0 +1,1119 @@
+class BullyAlgorithm:
+    def __init__(self, processes, coordinator=None):
+        self.processes = processes  # list of process IDs
+        # Highest process ID is assumed leader if not explicitly provided.
+        self.coordinator = coordinator or max(processes)
+
+    def is_alive(self, process_id):
+        # Simulate which processes are alive; you can customize this
+        return process_id in self.processes
+
+    def hold_election(self, initiator):
+        print(f"Process {initiator} starts election.")
+
+        # Bully rule: only higher-ID processes can defeat current initiator.
+        higher_processes = [p for p in self.processes if p > initiator]
+
+        if not higher_processes:
+            self.coordinator = initiator
+            print(f"Process {initiator} becomes the new coordinator.")
+        else:
+            for p in higher_processes:
+                print(f"Process {initiator} sends election message to {p}.")
+
+            # Any alive higher process replying means initiator must back off.
+            responses = [p for p in higher_processes if self.is_alive(p)]
+
+            if responses:
+                print(f"Process {initiator} gets responses from: {responses}")
+
+                # Bully rule: highest responding process now continues election.
+                highest = max(responses)
+                self.hold_election(highest)
+            else:
+                # If nobody higher responds, initiator is the highest alive process.
+                self.coordinator = initiator
+                print(f"No higher processes responded. {initiator} becomes coordinator.")
+
+
+# Example usage
+processes = [1, 2, 3, 5, 6]
+bully = BullyAlgorithm(processes)
+bully.hold_election(initiator=3)
+
+
+
+
+
+
+
+
+
+
+
+## RIng.py
+
+class RingAlgorithm:
+    def __init__(self, processes):
+        # Keep deterministic ring traversal order.
+        self.processes = sorted(processes)
+        self.ring = self.processes[:]
+        self.coordinator = None
+
+    def is_alive(self, process_id):
+        return process_id in self.ring
+
+    def hold_election(self, initiator):
+        print(f"Process {initiator} starts election.")
+
+        # Election message starts with initiator ID and circulates once.
+        # This list simulates election message payload (visited/alive IDs).
+        election_list = [initiator]
+        current_index = self.ring.index(initiator)
+
+        while True:
+            # Modulo creates ring wrap-around from last node back to first.
+            current_index = (current_index + 1) % len(self.ring)
+            next_process = self.ring[current_index]
+
+            # Reaching initiator again means one full circulation is complete.
+            if next_process == initiator:
+                break
+
+            # election_list[-1] is current sender, next_process is receiver.
+            print(f"Election message from {election_list[-1]} to {next_process}")
+            election_list.append(next_process)
+
+        # Highest process ID collected in the ring becomes coordinator.
+        winner = max(election_list)
+        self.coordinator = winner
+
+        print(f"Process {winner} is elected as the new coordinator.")
+
+
+# Example usage
+processes = [1, 2, 4, 6]
+ring = RingAlgorithm(processes)
+ring.hold_election(initiator=2)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+# Distributed Systems Practicals - Bully & Ring Election Solutions
+
+## 📌 FOLDER 6: Bully and Ring Election Algorithms
+
+---
+
+## 🎓 ORAL EXAM QUESTIONS WITH ANSWERS
+
+### Basic Level Questions
+
+1. **What is a distributed leader election algorithm?**
+   
+   **Answer**:
+   Leader election is the process of electing one process as coordinator/master in a distributed system.
+   
+   Requirements:
+   - **Safety**: Only one leader elected (uniqueness)
+   - **Liveness**: Every failed leader triggers new election
+   - **Termination**: Election always completes
+   
+   Use cases:
+   - Database replication (elect primary)
+   - Distributed locking (one lock manager)
+   - Cluster coordination (one master)
+   - Resource management (one scheduler)
+   
+   Challenges:
+   - Network delays (how long to wait?)
+   - Simultaneous failures (multiple candidates)
+   - Partial connectivity (split-brain)
+
+2. **What is the Bully Algorithm?**
+   
+   **Answer**:
+   Bully Algorithm elects leader by **priority/rank**:
+   - Higher rank/ID = higher priority
+   - When process detects leader failure: initiate election
+   - Send "election" messages to all higher-ranked processes
+   - If any responds: initiator withdraws, that process continues
+   - If none respond: initiator becomes leader
+   
+   Key characteristic: **Always elects highest-ranked process**
+   
+   Simple example (4 processes, IDs: 0,1,2,3):
+   ```
+   Leader is Process 3 (highest)
+   Process 3 crashes
+   Process 1 detects failure, starts election
+   Process 1 sends to: 2 and 3
+   Process 2 responds (still alive)
+   Process 2 takes over, sends "elected" message
+   Process 2 becomes leader
+   ```
+
+3. **What is the Ring Algorithm?**
+   
+   **Answer**:
+   Ring Algorithm elects leader by **circulation**:
+   - Processes arranged in ring topology
+   - When leader fails: initiator sends "election" message around ring
+   - Message collects process IDs as it circulates
+   - Highest ID in collected set becomes leader
+   - "Leader" message circulates with result
+   
+   Key characteristic: **No priority difference (initially)**, highest in ring wins
+   
+   Simple example (ring: 0→1→2→3→0):
+   ```
+   Process 1 detects leader failure
+   Sends election: [1] to next (Process 2)
+   Process 2 adds self: [1,2] to next
+   Process 3 adds self: [1,2,3] to next
+   Process 0 adds self: [1,2,3,0] to next
+   Back to Process 1: Found max=3
+   Process 3 is leader!
+   ```
+
+4. **What is the key difference between Bully and Ring algorithms?**
+   
+   **Answer**:
+   
+   | Aspect | Bully | Ring |
+   |--------|-------|------|
+   | **Election trigger** | Detect leader failure | Any process failure |
+   | **Message target** | All higher-ranked | Ring neighbors |
+   | **Leader selection** | Highest priority | Highest ID in ring |
+   | **Message complexity** | O(n²) | O(n) |
+   | **Time complexity** | O(n) | O(n²) |
+   | **Topology** | Star (all-to-all) | Ring (sequential) |
+   | **Failure detection** | Leader only | Any process |
+   | **Scalability** | Poor (O(n²) messages) | Better (O(n) messages) |
+   
+   Bully: **Fast** but expensive (many messages)
+   Ring: **Economical** but slower (sequential circulation)
+
+5. **Explain how each algorithm detects leader failure.**
+   
+   **Answer**:
+   **Bully Algorithm**:
+   ```
+   Process P_i sends periodic heartbeat to leader
+   
+   if no response for timeout T:
+       // Leader dead
+       initiate_election()
+   ```
+   
+   **Ring Algorithm**:
+   ```
+   Process P_i sends periodic heartbeat to next in ring
+   Process P_i also monitors heartbeat from previous
+   
+   if no heartbeat from either neighbor for timeout T:
+       // Assume failure
+       initiate_election()
+   ```
+   
+   Both use timeout-based failure detection:
+   - If no response in time T → assume failed
+   - Challenge: Network delay vs process failure
+   - False positives possible (process slow but alive)
+   
+   Solution: Configurable timeout, typically 2-3x expected RTT
+
+---
+
+### Intermediate Level Questions
+
+6. **Describe the Bully Algorithm message types and protocol.**
+   
+   **Answer**:
+   **Message Types**:
+   
+   1. **Election Message**:
+      ```
+      {type: "ELECTION", from: P_i}
+      Sender: P_i (detected failure)
+      Receiver: All processes P_j where j > i
+      Meaning: "I'm starting election"
+      ```
+   
+   2. **OK/ACK Message**:
+      ```
+      {type: "OK", from: P_j}
+      Sender: P_j (higher ranked)
+      Receiver: P_i (election initiator)
+      Meaning: "OK, I'll take over, you back off"
+      ```
+   
+   3. **Leader/Elected Message**:
+      ```
+      {type: "LEADER", from: P_j}
+      Sender: New leader P_j
+      Receiver: All other processes
+      Meaning: "I'm the new leader"
+      ```
+   
+   **Protocol Flow**:
+   ```
+   Step 1: P_i detects leader failure
+   Step 2: P_i sends ELECTION to all P_j (j > i)
+   Step 3: Each P_j receiving ELECTION sends OK back to P_i
+   Step 4: If P_i receives any OK, it stops and waits
+   Step 5: Higher ranked process continues election
+   Step 6: Eventually highest-ranked process wins
+   Step 7: Winner sends LEADER message to all
+   Step 8: All acknowledge new leader
+   ```
+
+7. **Describe the Ring Algorithm message types and protocol.**
+   
+   **Answer**:
+   **Message Types**:
+   
+   1. **Election Message**:
+      ```
+      {type: "ELECTION", initiator: P_i, list: [P_i]}
+      Sender: P_i or intermediate process
+      Receiver: Next process in ring
+      Meaning: "Election started by P_i, carrying IDs"
+      ```
+   
+   2. **Leader Message**:
+      ```
+      {type: "LEADER", leader_id: max_id}
+      Sender: Process completing election
+      Receiver: Next in ring
+      Meaning: "New leader is Process max_id"
+      ```
+   
+   **Protocol Flow**:
+   ```
+   Step 1: P_i detects failure, sends ELECTION [P_i]
+   Step 2: P_{i+1} receives, adds self: ELECTION [P_i, P_{i+1}]
+   Step 3: P_{i+2} receives, adds self: ELECTION [P_i, P_{i+1}, P_{i+2}]
+   ...
+   Step n: Message completes ring, returns to P_i
+   Step n+1: P_i calculates max(list) = leader_id
+   Step n+2: P_i sends LEADER message around ring
+   Step n+3: Each process acknowledges and stores leader_id
+   ```
+   
+   Total messages: 2n (n for election, n for leader announcement)
+
+8. **Compare message complexity of Bully vs Ring.**
+   
+   **Answer**:
+   **Bully Algorithm**:
+   ```
+   Worst case (lowest process starts election):
+   
+   Process 0 sends ELECTION to: 1,2,3,...,n-1
+   Count: n-1 messages
+   
+   Process 1 sends ELECTION to: 2,3,...,n-1
+   Count: n-2 messages
+   ...
+   Process n-1 becomes leader
+   
+   All OK messages (each responder sends back):
+   Process 1: sends OK to 0
+   Process 2: sends OK to 0
+   ...
+   
+   Total: (n-1) + (n-2) + ... + 1 = n(n-1)/2 ≈ O(n²)
+   
+   Plus LEADER message: n-1 (to all)
+   
+   Total: O(n²) messages
+   ```
+   
+   **Ring Algorithm**:
+   ```
+   Single election phase:
+   - Election message circulates once: n messages
+   - Leader announcement circulates: n messages
+   
+   Total: 2n ≈ O(n) messages
+   ```
+   
+   **Comparison**:
+   - Bully: O(n²) messages, O(n) time (fast, expensive)
+   - Ring: O(n) messages, O(n²) time (economical, slow)
+   
+   Tradeoff: Bandwidth vs Latency
+
+9. **What is the time complexity of Bully vs Ring algorithms?**
+   
+   **Answer**:
+   **Bully Algorithm** (Assuming immediate network):
+   ```
+   Step 1: Detect failure (timeout) - O(timeout)
+   Step 2: Send election messages - O(1)
+   Step 3: Receive OK messages - O(1)
+   Step 4: Highest process continues - O(n)
+   Step 5: Send LEADER message - O(1)
+   Step 6: All receive LEADER - O(1)
+   
+   Worst case: O(n) stages (n processes might initiate elections)
+   
+   Total time: O(n) rounds
+   ```
+   
+   **Ring Algorithm**:
+   ```
+   Step 1: Detect failure (timeout) - O(timeout)
+   Step 2: Send ELECTION, circulate n times - O(n)
+   Step 3: Process at each step adds itself
+   Step 4: Message returns to initiator - O(n)
+   Step 5: Send LEADER message - O(n)
+   
+   Total time: O(n) message rounds
+   ```
+   
+   **Summary**:
+   - Bully: O(n) time (fastest)
+   - Ring: O(n) time (similar, but sequential)
+   
+   In practice with network:
+   - Bully: ~n message delays
+   - Ring: ~2n message delays (slower, more sequential)
+
+10. **How do these algorithms handle concurrent failures?**
+    
+    **Answer**:
+    **Bully Algorithm**:
+    ```
+    Two processes detect leader failure simultaneously:
+    Process 1: Starts election
+    Process 3: Starts election (both try at same time)
+    
+    Result: Both send ELECTION messages
+    Process 3 will respond to Process 1 with OK
+    Process 3 will respond to Process 3's own election? No!
+    
+    Higher process eventually becomes leader
+    Safe: Always consistent (highest priority wins)
+    ```
+    
+    **Ring Algorithm**:
+    ```
+    Two processes start elections simultaneously:
+    Process 1: ELECTION [1] → 2 → 3 → ... → 1
+    Process 3: ELECTION [3] → 4 → ... → 1 → 2 → 3
+    
+    Two messages circulating:
+    Risk: Messages might merge or interfere
+    
+    Solution: Process detects duplicate elections
+    Keep only message with highest initiator ID
+    Continue with merged list
+    ```
+    
+    Both handle concurrency, but:
+    - Bully: Cleaner (one always wins)
+    - Ring: More complex (message merging)
+
+---
+
+### Advanced Level Questions
+
+11. **Design a Byzantine-fault-tolerant leader election algorithm.**
+    
+    **Answer**:
+    Challenge: Malicious process might lie about its rank
+    
+    Bully with Byzantine resilience:
+    ```python
+    # Instead of trusting single response
+    # Require majority agreement
+    
+    def elect_leader():
+        # Send ELECTION to top 3 candidates
+        candidates = [n-1, n-2, n-3]
+        
+        votes = {}
+        for candidate in candidates:
+            response = query_candidate(candidate)
+            # Verify response with quorum
+            confirmations = 0
+            for process in all_processes:
+                if process.confirm(response):
+                    confirmations += 1
+            
+            if confirmations >= n/2:  # Majority
+                votes[candidate] += 1
+        
+        # Leader is process with most votes
+        leader = max(votes.keys())
+        return leader
+    ```
+    
+    Ring with Byzantine resilience:
+    ```python
+    # Each process verifies messages cryptographically
+    
+    def verify_election_message(msg):
+        # Digital signature verification
+        if not verify_signature(msg.signature):
+            reject_message()
+            return False
+        
+        # Verify IDs in list are realistic
+        for process_id in msg.id_list:
+            if process_id < 0 or process_id >= n:
+                reject_message()  # Fake ID
+                return False
+        
+        return True
+    ```
+
+12. **How would you implement leader election in a mobile/dynamic network?**
+    
+    **Answer**:
+    Challenge: Processes join/leave at any time
+    
+    Solution 1: **Periodic Re-elections**
+    ```
+    Every T seconds, re-run election
+    Process joining: Participates in next election
+    Process leaving: Detected by timeout
+    Process failing: Detected, triggers new election
+    
+    Tradeoff: More frequent elections (overhead) vs stale leader
+    ```
+    
+    Solution 2: **Adaptive Algorithm**
+    ```python
+    class DynamicLeaderElection:
+        def __init__(self):
+            self.known_processes = set()
+            self.leader = None
+            self.election_interval = 10  # seconds
+        
+        def process_joined(self, new_process):
+            self.known_processes.add(new_process)
+            # If new process is higher ranked than current leader
+            if new_process > self.leader:
+                trigger_election()
+        
+        def process_left(self, dead_process):
+            self.known_processes.remove(dead_process)
+            if dead_process == self.leader:
+                trigger_election()
+    ```
+    
+    Solution 3: **Hierarchical Election**
+    ```
+    Zone 1 (processes 1-100): Elect local leader
+    Zone 2 (processes 101-200): Elect local leader
+    ...
+    Global: Elect from zone leaders
+    
+    Benefit: Scales to thousands of processes
+    Each zone: O(zone_size²) complexity
+    Global: O(num_zones²) complexity
+    ```
+
+13. **Explain how Bully handles stale leader detection.**
+    
+    **Answer**:
+    Problem: How long to wait before considering leader dead?
+    
+    Timeout calculation:
+    ```python
+    # Method 1: Fixed timeout
+    timeout = 5 seconds
+    # Simple but might miss failures (network delays)
+    
+    # Method 2: Adaptive timeout
+    rtt = measure_leader_rtt()  # Round-trip time
+    timeout = 3 * rtt  # 3x typical RTT
+    
+    # Method 3: Probabilistic
+    timeout = exponential(rtt)
+    # Longer wait, lower false positive rate
+    ```
+    
+    Heartbeat mechanism:
+    ```python
+    # Leader sends periodic heartbeat
+    while True:
+        sleep(heartbeat_interval)  # e.g., 1 second
+        send_heartbeat_to_all()
+    
+    # Each process waits for heartbeat
+    last_heartbeat = time.now()
+    
+    while True:
+        heartbeat = wait_for_heartbeat(timeout)
+        if heartbeat:
+            last_heartbeat = time.now()
+        elif time.now() - last_heartbeat > timeout:
+            leader_is_dead()
+            trigger_election()
+    ```
+    
+    False positive handling:
+    ```
+    # Leader might be slow, not dead
+    # Can implement verification:
+    
+    if heartbeat_missed:
+        # Send probe to leader
+        response = probe_leader(timeout=1s)
+        if no response:
+            leader_is_actually_dead()
+            trigger_election()
+        else:
+            leader_is_alive_but_slow()
+    ```
+
+14. **Compare Bully and Ring for different topologies.**
+    
+    **Answer**:
+    
+    **Bully (Star Topology - All-to-All)**:
+    ```
+    Works best when all processes can communicate with all
+    Each process knows all others and their IDs
+    
+    Fully connected network: ✓ Optimal
+    Ring topology: ✗ Inefficient (n messages to ring neighbors)
+    Tree topology: ✗ Messages have to route through tree
+    Mesh network: ✓ Good (multiple paths)
+    ```
+    
+    **Ring (Ring Topology)**:
+    ```
+    Works best with sequential/ring connection
+    Process only sends to next, receives from previous
+    
+    Ring topology: ✓ Optimal
+    Star topology: ✗ Extra work (ring simulation)
+    Tree topology: ✗ Need ring simulation
+    Mesh network: ✓ Good (can find ring path)
+    ```
+    
+    Recommendation:
+    ```
+    Topology: Fully connected → Use Bully (fast, O(n) time)
+    Topology: Ring only → Use Ring (economical, O(n) messages)
+    Topology: General mesh → Use Bully (more reliable paths)
+    ```
+
+15. **Design an election algorithm that minimizes message overhead.**
+    
+    **Answer**:
+    Challenge: Reduce O(n²) or O(n) messages
+    
+    **Hierarchy-based** (divide and conquer):
+    ```
+    Level 0: 8 groups, each elects local leader (8 elections)
+    Level 1: 8 local leaders elect global leader
+    
+    Message count: 8 * n/8 + 8 = n + 8 ≈ O(n)
+    Much less than Bully's O(n²)
+    ```
+    
+    **Gossip-based**:
+    ```python
+    # Each process tells 2 random neighbors about leader
+    # Converges quickly (logarithmic rounds)
+    
+    def gossip_election():
+        elected = get_my_rank()
+        round = 0
+        
+        while round < log(n):
+            # Each process tells 2 random neighbors
+            neighbor1 = random_process()
+            neighbor2 = random_process()
+            
+            send_leader_candidate(elected, neighbor1)
+            send_leader_candidate(elected, neighbor2)
+            
+            # Receive from others
+            msg1 = receive_message()
+            msg2 = receive_message()
+            
+            # Update belief
+            elected = max(elected, msg1.candidate, msg2.candidate)
+            round += 1
+    ```
+    
+    **Optimized Ring**:
+    ```
+    Instead of everyone initiating election:
+    Only process 0 (lowest rank) initiates
+    
+    Message count: O(n) instead of O(n²)
+    Time: O(n²) worst case (if process 0 is slow)
+    ```
+
+---
+
+### Scenario-Based Questions
+
+16. **Implement Bully Algorithm in a multi-threaded environment.**
+    
+    **Answer**:
+    Python implementation:
+    
+    ```python
+    import threading
+    import time
+    from queue import Queue
+    
+    class BullyElection:
+        def __init__(self, rank, total_processes):
+            self.rank = rank
+            self.total = total_processes
+            self.leader = None
+            self.is_leader = (rank == total_processes - 1)
+            
+            self.lock = threading.Lock()
+            self.leader_condition = threading.Condition(self.lock)
+            self.message_queue = Queue()
+            
+            self.receiver_thread = threading.Thread(target=self.receive_messages)
+            self.receiver_thread.daemon = True
+            self.receiver_thread.start()
+            
+            self.heartbeat_thread = threading.Thread(target=self.send_heartbeat)
+            self.heartbeat_thread.daemon = True
+            if self.is_leader:
+                self.heartbeat_thread.start()
+        
+        def detect_leader_failure(self):
+            """Called when leader doesn't respond"""
+            with self.leader_condition:
+                self.is_leader = False
+                self.start_election()
+        
+        def start_election(self):
+            """Initiate election when leader fails"""
+            print(f"Process {self.rank}: Starting election")
+            
+            election_received = threading.Event()
+            higher_processes = [p for p in range(self.rank + 1, self.total)]
+            
+            for higher in higher_processes:
+                self.send_message(higher, "ELECTION", self.rank)
+            
+            # Wait for responses
+            time.sleep(0.5)  # Give time for responses
+            
+            responses = []
+            while not self.message_queue.empty():
+                msg = self.message_queue.get()
+                if msg['type'] == 'OK':
+                    responses.append(msg)
+            
+            if not responses:
+                # No higher process responded, I'm leader
+                self.become_leader()
+            else:
+                # Higher process will take over
+                print(f"Process {self.rank}: Backing off")
+        
+        def become_leader(self):
+            """Become the new leader"""
+            with self.leader_condition:
+                self.is_leader = True
+                self.leader = self.rank
+                self.leader_condition.notify_all()
+            
+            print(f"Process {self.rank}: I'm the new leader!")
+            
+            # Announce to all
+            for p in range(self.total):
+                if p != self.rank:
+                    self.send_message(p, "LEADER", self.rank)
+        
+        def receive_messages(self):
+            """Receive and handle messages"""
+            while True:
+                msg = self.message_queue.get()
+                
+                if msg['type'] == 'ELECTION':
+                    # Higher rank responded with OK
+                    self.send_message(msg['from'], 'OK', self.rank)
+                    
+                    # Start my own election if not already
+                    if not self.is_leader:
+                        self.start_election()
+                
+                elif msg['type'] == 'LEADER':
+                    # New leader announced
+                    with self.leader_condition:
+                        self.leader = msg['leader']
+                        self.is_leader = (self.rank == self.leader)
+                        self.leader_condition.notify_all()
+                    print(f"Process {self.rank}: New leader is {self.leader}")
+        
+        def send_message(self, to_rank, msg_type, data):
+            """Send message to another process"""
+            # In real implementation, use network sockets
+            self.message_queue.put({
+                'from': self.rank,
+                'to': to_rank,
+                'type': msg_type,
+                'data': data
+            })
+        
+        def send_heartbeat(self):
+            """Leader sends periodic heartbeat"""
+            while self.is_leader:
+                time.sleep(1)
+                for p in range(self.total):
+                    if p != self.rank:
+                        self.send_message(p, 'HEARTBEAT', self.rank)
+    ```
+
+17. **Implement Ring Algorithm with process failure detection.**
+    
+    **Answer**:
+    ```python
+    class RingElection:
+        def __init__(self, rank, total_processes):
+            self.rank = rank
+            self.total = total_processes
+            self.next_rank = (rank + 1) % total_processes
+            self.prev_rank = (rank - 1 + total_processes) % total_processes
+            
+            self.leader = None
+            self.election_in_progress = False
+            self.election_message = None
+        
+        def detect_neighbor_failure(self, neighbor_rank):
+            """Neighbor is not responding"""
+            print(f"Process {self.rank}: Detected {neighbor_rank} failure")
+            
+            # Skip dead neighbor
+            self.next_rank = (neighbor_rank + 1) % self.total
+            
+            # Start election if not already in progress
+            if not self.election_in_progress:
+                self.start_election()
+        
+        def start_election(self):
+            """Initiate election"""
+            self.election_in_progress = True
+            self.election_message = {
+                'initiator': self.rank,
+                'id_list': [self.rank],
+                'stage': 'election'
+            }
+            
+            print(f"Process {self.rank}: Starting election, sending {self.election_message}")
+            self.send_to_next(self.election_message)
+        
+        def receive_election_message(self, msg):
+            """Receive election message"""
+            if msg['stage'] == 'election':
+                # Add my ID and pass along
+                if self.rank not in msg['id_list']:
+                    msg['id_list'].append(self.rank)
+                
+                print(f"Process {self.rank}: Election msg = {msg['id_list']}")
+                
+                # Check if message completed circuit
+                if msg['initiator'] == self.rank:
+                    # Message came full circle
+                    leader_id = max(msg['id_list'])
+                    self.announce_leader(leader_id)
+                else:
+                    # Pass to next
+                    self.send_to_next(msg)
+        
+        def announce_leader(self, leader_id):
+            """Announce elected leader"""
+            msg = {
+                'stage': 'leader',
+                'leader': leader_id
+            }
+            
+            print(f"Process {self.rank}: Leader elected: {leader_id}")
+            self.election_in_progress = False
+            self.leader = leader_id
+            
+            # Circulate announcement
+            self.send_to_next(msg)
+        
+        def receive_leader_announcement(self, msg):
+            """Receive leader announcement"""
+            self.leader = msg['leader']
+            self.election_in_progress = False
+            
+            # Pass announcement around
+            if msg.get('passed', 0) < self.total:
+                msg['passed'] = msg.get('passed', 0) + 1
+                self.send_to_next(msg)
+        
+        def send_to_next(self, msg):
+            """Send message to next process in ring"""
+            # In real implementation, use network
+            print(f"Process {self.rank}: Sending to {self.next_rank}")
+    ```
+
+18. **Design failover strategy when leader crashes.**
+    
+    **Answer**:
+    ```python
+    class FailoverStrategy:
+        def __init__(self, current_leader, processes):
+            self.leader = current_leader
+            self.processes = processes  # Sorted by priority
+            self.backup_leaders = processes[1:3]  # Next 2 processes
+        
+        def leader_health_check(self):
+            """Periodically check leader health"""
+            timeout = 5
+            try:
+                response = ping_process(self.leader, timeout)
+                return response is not None
+            except:
+                return False
+        
+        def initiate_failover(self):
+            """When leader fails"""
+            print(f"Leader {self.leader} failed!")
+            
+            # Strategy 1: Use pre-designated backup
+            for backup in self.backup_leaders:
+                if self.is_alive(backup):
+                    print(f"Promoting backup: {backup}")
+                    self.leader = backup
+                    notify_all_processes(f"New leader: {backup}")
+                    return
+            
+            # Strategy 2: If no backup alive, run election
+            print("No backup alive, starting election...")
+            election = BullyElection(my_rank, len(self.processes))
+            election.start_election()
+            self.leader = election.wait_for_leader()
+        
+        def synchronize_with_new_leader(self):
+            """Sync state with new leader"""
+            my_state = get_my_state()
+            leader_state = get_leader_state(self.leader)
+            
+            if my_state != leader_state:
+                # Apply updates from leader
+                apply_updates(leader_state)
+                print("Synchronized with new leader")
+    ```
+
+19. **Compare election algorithms for different network conditions.**
+    
+    **Answer**:
+    
+    | Condition | Bully | Ring |
+    |-----------|-------|------|
+    | **High latency** | Poor (many round-trips) | Good (single circuit) |
+    | **High packet loss** | Worse (must retry) | Better (sequential) |
+    | **Partial connectivity** | Risky (might not reach all) | Good (follows ring path) |
+    | **Large n** | Very expensive O(n²) | Better O(n) |
+    | **Many failures** | OK (re-elections) | Better (adaptive) |
+    | **Stable network** | Best (fast O(n)) | OK |
+    
+    Recommendations:
+    ```
+    Low latency, stable: Bully (fast, simple)
+    High latency, unstable: Ring (reliable)
+    Mobile/dynamic: Hybrid (use gossip)
+    Large scale (1000+): Hierarchical
+    ```
+
+20. **Design a combined Bully+Ring algorithm leveraging strengths of both.**
+    
+    **Answer**:
+    **Hybrid Algorithm**:
+    
+    ```python
+    class HybridElection:
+        def __init__(self, rank, total_processes):
+            self.rank = rank
+            self.total = total_processes
+            self.topology = self.detect_topology()  # Ring or mesh?
+        
+        def start_election(self):
+            """Choose algorithm based on topology"""
+            if self.is_ring_topology():
+                # Use Ring for efficiency
+                return self.ring_election()
+            else:
+                # Use Bully for speed
+                return self.bully_election()
+        
+        def ring_election(self):
+            """Phase 1: Use Ring algorithm"""
+            # Collect IDs as message circulates
+            message = [self.rank]
+            message = self.circulate_ring(message)
+            leader = max(message)
+            return leader
+        
+        def bully_election(self):
+            """Phase 2: Use Bully for final confirmation"""
+            # Higher processes confirm they're alive
+            for higher in range(self.rank + 1, self.total):
+                if self.can_reach(higher):
+                    return higher
+            return self.rank
+        
+        def hybrid_election(self):
+            """Combined approach"""
+            # Phase 1: Ring - collect all process IDs
+            candidates = self.ring_election_collect()
+            
+            # Phase 2: Bully - highest candidate confirms
+            for candidate in sorted(candidates, reverse=True):
+                if self.confirm_alive(candidate):
+                    leader = candidate
+                    self.announce_leader(leader)
+                    return leader
+        
+        def detect_topology(self):
+            """Determine network topology"""
+            # Send probe to all processes
+            reachable = {}
+            for p in range(self.total):
+                reachable[p] = self.can_reach(p)
+            
+            # Analyze connectivity pattern
+            if self.is_fully_connected(reachable):
+                return "mesh"
+            elif self.is_ring_only(reachable):
+                return "ring"
+            else:
+                return "partial"
+    ```
+    
+    **Benefits of Hybrid Approach**:
+    - Ring's efficiency for message count (O(n))
+    - Bully's speed for confirmation (O(n))
+    - Adapts to topology
+    - Robust in varied conditions
+'''

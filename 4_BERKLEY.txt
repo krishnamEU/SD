@@ -1,0 +1,1640 @@
+import random
+
+# Simulating network nodes with their clock times (in seconds)
+class Node:
+    def __init__(self, node_id, clock_time):
+        self.node_id = node_id
+        self.clock_time = clock_time
+
+    def get_time(self):
+        return self.clock_time
+
+    def adjust_time(self, offset):
+        self.clock_time += offset
+
+    def __repr__(self):
+        return f"Node {self.node_id}: {self.clock_time:.2f} sec"
+
+
+class Coordinator(Node):
+    def synchronize_clocks(self, nodes):
+        print("Polling times from all nodes...")
+        # times[node_id] stores node offset relative to coordinator clock.
+        times = {}
+
+        # Step 1: Collect each node's time offset relative to coordinator.
+        for node in nodes:
+            if node.node_id == self.node_id:
+                continue
+            # Simulate network delay and assume symmetric one-way delay.
+            delay = random.uniform(0.1, 0.5)
+            node_time = node.get_time() + delay / 2  # assume symmetric delay
+            # Positive offset means node appears ahead of coordinator.
+            times[node.node_id] = node_time - self.clock_time
+            print(f"Node {node.node_id} time: {node.get_time():.2f}, adjusted for delay: {node_time:.2f}")
+
+        # Coordinator's own offset to itself is always zero.
+        times[self.node_id] = 0.0
+
+        # Step 2: Compute group average offset used as consensus time shift.
+        average_offset = sum(times.values()) / len(times)
+        print(f"\nCalculated average offset: {average_offset:.2f} seconds")
+
+        # Step 3: Send per-node correction so all clocks converge.
+        for node in nodes:
+            # Node-specific correction = target offset - node's current offset.
+            offset = average_offset - times[node.node_id]
+            node.adjust_time(offset)
+            print(f"Adjusting Node {node.node_id} by {offset:+.2f} seconds")
+
+        print("\nSynchronization complete.\n")
+
+
+# --- Example usage ---
+if __name__ == "__main__":
+    # Create nodes with different clock times
+    nodes = [
+        Coordinator(0, 100.0),   # Coordinator
+        Node(1, 102.0),
+        Node(2, 98.5),
+        Node(3, 101.2),
+        Node(4, 99.8),
+    ]
+
+    print("Initial times:")
+    for node in nodes:
+        print(node)
+
+    coordinator = nodes[0]
+    coordinator.synchronize_clocks(nodes)
+
+    print("Final times after synchronization:")
+    for node in nodes:
+        print(node)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+
+
+# Distributed Systems Practicals - Berkeley Algorithm Solutions & Documentation
+
+## 📌 FOLDER 4: Berkeley Algorithm (Clock Synchronization)
+
+---
+
+## 🎓 ORAL EXAM QUESTIONS WITH ANSWERS
+
+### Basic Level Questions
+1. **What is clock synchronization and why is it important in distributed systems?**
+   
+   **Answer**:
+   Clock synchronization means keeping the clocks of all machines in a distributed system close to one another.
+   It matters because:
+   - event ordering becomes clearer
+   - logs from different nodes can be compared
+   - replicated databases can decide which update is newer
+   - timeout-based protocols behave more predictably
+   
+   If clocks differ a lot, one node may think an event happened "in the future" or "in the past," which breaks debugging and coordination.
+
+2. **What is the Berkeley Algorithm?**
+   
+   **Answer**:
+   The Berkeley Algorithm is a distributed clock synchronization method where one node acts as a coordinator.
+   The coordinator collects time values from all machines, computes an average, and tells each node how much to adjust its clock.
+   
+   It is useful when there is no external time source like an atomic clock and the goal is to make all local clocks agree with each other.
+
+3. **What is the role of the coordinator in Berkeley Algorithm?**
+   
+   **Answer**:
+   The coordinator is responsible for:
+   - polling all nodes for their current time
+   - estimating network delay when collecting times
+   - computing the average or corrected average time
+   - sending adjustment values back to each node
+   - ignoring faulty or extreme outlier clocks if needed
+   
+   In practice, any node can be chosen as coordinator, but usually the one with the best connectivity or least load is preferred.
+
+4. **Explain the three main steps of Berkeley Algorithm.**
+   
+   **Answer**:
+   The algorithm works in three phases:
+   - **Collection phase**: coordinator asks each node for its local time
+   - **Calculation phase**: coordinator computes average time and the offset for each node
+   - **Distribution phase**: coordinator sends adjustment values to every node
+   
+   After that, each node updates its local clock by the amount requested.
+
+5. **What is clock skew and clock drift?**
+   
+   **Answer**:
+   Clock skew is the difference between two clocks at a given moment.
+   Clock drift is the rate at which one clock slowly moves away from another over time.
+   
+   Example:
+   - If Node A shows 10:00 and Node B shows 10:02, the skew is 2 minutes.
+   - If Node B gains 1 second every 10 minutes, that is drift.
+   
+   Drift happens because physical clocks are imperfect and their oscillators are not identical.
+
+### Intermediate Level Questions
+6. **How does Berkeley Algorithm handle network delays?**
+   
+   **Answer**:
+   Berkeley estimates delay by assuming the round-trip delay is roughly symmetric.
+   If a request takes D milliseconds to go to a node and come back, it assumes about D/2 was spent one way.
+   
+   This estimate is used to correct the reported clock value before computing the average.
+
+7. **Why is average time used instead of median in Berkeley?**
+   
+   **Answer**:
+   The average is used because the goal is to minimize the total adjustment across the whole group.
+   It gives a single consensus time around which all nodes can converge.
+   
+   The median can resist outliers better, but Berkeley traditionally uses averaging and then may discard obvious faulty clocks before averaging.
+
+8. **How does Berkeley Algorithm differ from NTP (Network Time Protocol)?**
+   
+   **Answer**:
+   Berkeley is a closed-group synchronization method where one node coordinates the others and the group agrees on a common internal time.
+   NTP synchronizes clocks using external reference servers and a hierarchy of time sources.
+   
+   Main difference:
+   - Berkeley: good for internal agreement inside a cluster
+   - NTP: good for keeping time close to real-world UTC
+
+9. **What are the time complexities of Berkeley Algorithm?**
+   
+   **Answer**:
+   Message complexity is O(n) because the coordinator must contact each of the n nodes.
+   Time complexity is also effectively O(n) for a single synchronization round, although the theoretical question paper sometimes writes it as O(log n) when discussing multi-level hierarchical synchronization.
+   
+   In a basic flat network, the important fact is that every node is contacted once.
+
+10. **How would you handle a faulty coordinator in Berkeley?**
+    
+    **Answer**:
+    If the coordinator fails, a new coordinator must be elected.
+    Common approaches:
+    - choose the next healthy node in a predefined order
+    - run a leader election algorithm like Bully or Ring
+    - keep a backup coordinator that can take over
+    
+    The key requirement is that only one coordinator should be active at a time.
+
+### Advanced Level Questions
+11. **Design a Byzantine-fault-tolerant clock synchronization algorithm.**
+    
+    **Answer**:
+    A Byzantine-fault-tolerant version must handle malicious nodes that send wrong time values on purpose.
+    A practical design is:
+    - collect times from all nodes
+    - verify messages using authentication
+    - discard values that are too far from the majority
+    - compute the average only from trusted nodes
+    - use quorum-based agreement when choosing the final time
+
+12. **Explain how Berkeley Algorithm maintains global time consistency.**
+    
+    **Answer**:
+    Berkeley maintains consistency by repeatedly forcing all clocks toward the group average.
+    Even if small drift exists, repeated synchronization rounds keep the maximum difference between clocks bounded.
+    
+    The system does not guarantee perfect real-world time, but it does guarantee that all participating nodes stay close to each other.
+
+13. **Compare Berkeley with Cristian's Algorithm.**
+    
+    **Answer**:
+    Cristian's Algorithm asks a time server for the current time and adjusts based on the reply.
+    Berkeley instead asks all nodes, computes a group average, and synchronizes the whole cluster internally.
+    
+    Comparison:
+    - Cristian: server-centered, useful when accurate external time exists
+    - Berkeley: group-centered, useful when internal agreement is enough
+
+14. **How would you implement Berkeley Algorithm in a large-scale system?**
+    
+    **Answer**:
+    For large systems, use hierarchical synchronization.
+    
+    Example:
+    - local clusters synchronize with local coordinators
+    - local coordinators synchronize with a higher-level coordinator
+    - the top-level coordinator propagates adjustments back down
+    
+    This reduces communication overhead and keeps synchronization scalable.
+
+15. **Design a distributed clock synchronization system with dynamic nodes.**
+    
+    **Answer**:
+    The system should support node join and leave events.
+    
+    Design:
+    - when a node joins, it reports its clock during the next synchronization round
+    - when a node leaves, the coordinator simply excludes it from the next average
+    - if a node is unstable, mark it as suspicious and ignore it temporarily
+    
+    This keeps the system stable even when membership changes.
+
+### Scenario-Based Questions
+16. **How would you detect and remove faulty nodes in Berkeley synchronization?**
+    
+    **Answer**:
+    Use outlier detection.
+    If a node's reported time is too far from the rest of the cluster, mark it as faulty.
+    
+    Example rule:
+    - compute average time
+    - if |node_time - average| > threshold, exclude node
+    - recompute average without those nodes
+    
+    This prevents one bad clock from dragging the whole group away from correct time.
+
+17. **Design a real-time system that uses Berkeley for synchronization.**
+    
+    **Answer**:
+    A real-time monitoring system can use Berkeley to keep log timestamps and sensor events aligned across all machines.
+    
+    Requirements:
+    - low drift between nodes
+    - periodic synchronization rounds
+    - quick recovery when a node joins or fails
+    - bounded error tolerance
+    
+    Berkeley is useful here because the system mainly needs internal consistency, not exact UTC.
+
+18. **Compare Berkeley vs Lamport logical clocks for ordering events.**
+    
+    **Answer**:
+    Berkeley uses physical time and tries to make real clocks match.
+    Lamport logical clocks do not use real time; they only preserve causality ordering.
+    
+    Use Berkeley when:
+    - you need timestamps that look like real time
+    - logs should be comparable across nodes
+    
+    Use Lamport clocks when:
+    - you only care about event ordering
+    - physical clock accuracy is not important
+
+19. **Implement Berkeley with variable network delays.**
+    
+    **Answer**:
+    The coordinator should measure delay for each node individually.
+    
+    Strategy:
+    - timestamp request send time
+    - timestamp reply receive time
+    - estimate one-way delay as half of the RTT
+    - correct the node's reported time using that estimate
+    
+    If delays are asymmetric, use historical averages or discard unstable links.
+
+20. **Design a hybrid synchronization system combining Berkeley and NTP.**
+    
+    **Answer**:
+    A hybrid system can use NTP for approximate external UTC alignment and Berkeley for internal group consistency.
+    
+    Design:
+    - NTP synchronizes the cluster to a rough global time source
+    - Berkeley keeps all nodes close to each other inside the cluster
+    - if NTP becomes unavailable, Berkeley still preserves internal agreement
+    
+    This gives both real-world correctness and good local consistency.
+
+---
+
+## 🔧 DISTRIBUTED SYSTEMS CONCEPTS & THEORY
+
+### 1. **Clock Synchronization in Distributed Systems**
+
+#### **Why Clock Synchronization Matters?**
+
+**Real-World Problems Without Synchronization**:
+```
+Problem 1: Event Ordering
+├─ Node A: Task X completes at 10:00:03
+├─ Node B: Task Y completes at 10:00:02
+└─ Which completed first? Ambiguous!
+
+Problem 2: Database Transactions
+├─ Write at 10:00:05 on Node A
+├─ Read at 10:00:03 on Node B (2 seconds earlier!)
+└─ Read stale data from future!
+
+Problem 3: Distributed Logging
+├─ Error on Node A at 10:00:01
+├─ Error on Node B at 10:00:02
+├─ Another error on Node A at 10:00:00
+└─ Timeline is impossible!
+
+Problem 4: Scheduled Tasks
+├─ Backup scheduled for 10:00 on all nodes
+├─ But clocks differ by 5 minutes
+└─ Backups run 5 minutes apart, not simultaneously!
+```
+
+#### **Clock Properties**
+
+**Clock Accuracy**:
+```
+Real Time: 12:34:56.123456789
+Computer Time: 12:34:58.234567  (off by ~2 seconds)
+Accuracy = how close to real time
+```
+
+**Clock Precision**:
+```
+Precision = how finely can you measure time
+- Milliseconds: .001 seconds
+- Microseconds: .000001 seconds
+- Nanoseconds: .000000001 seconds
+```
+
+**Clock Stability (Drift)**:
+```
+A quartz crystal oscillator drifts at ~15 ppm (parts per million)
+- In 1 second: drifts ~15 microseconds
+- In 1 hour: drifts ~54 milliseconds
+- In 1 day: drifts ~1.3 seconds
+- In 1 month: drifts ~40 seconds
+```
+
+#### **Synchronization Metrics**
+
+```
+Clock Accuracy (external): How close to "true time"
+├─ Usually within ±100 milliseconds with NTP
+├─ Within ±1 microsecond with atomic clocks
+
+Clock Precision (relative): How synchronized with each other
+├─ Can be much better (±1 microsecond)
+├─ Relative accuracy more important than absolute
+
+Synchronization Overhead:
+├─ Message count: O(n) messages for n nodes
+├─ Time complexity: O(log n) rounds
+├─ Frequency: Usually every 10-60 seconds
+```
+
+---
+
+### 2. **Berkeley Algorithm**
+
+#### **Definition**
+Berkeley Algorithm is a clock synchronization algorithm where a coordinator node collects clock values from all other nodes, calculates the average, and distributes adjustment values to synchronize all clocks.
+
+#### **Historical Context**
+- **Invented**: 1985 at University of California, Berkeley
+- **Named after**: Where the algorithm was developed
+- **Purpose**: Synchronize internal clocks in distributed systems
+- **Scope**: Works within closed networks (not for external synchronization)
+
+#### **Algorithm Overview**
+
+**Key Characteristics**:
+- ✅ **Centralized**: One coordinator node
+- ✅ **Synchronous**: Nodes respond to coordinator queries
+- ✅ **Averaging**: Uses mean of collected times
+- ✅ **Simple**: Easy to understand and implement
+- ✅ **Fault-tolerant**: Can handle some faulty clocks
+- ✅ **Probabilistic**: Works based on statistical properties
+
+**Limitations**:
+- ❌ Coordinator dependency: Coordinator failure breaks system
+- ❌ No external time: Cannot synchronize with UTC
+- ❌ Assumes symmetric delays: Network must be relatively stable
+- ❌ Requires quorum: Needs most nodes working
+
+#### **Berkeley Algorithm Steps**
+
+```
+Step 1: REQUEST (Coordinator asks for times)
+┌─────────────────────────────────────────┐
+│ Coordinator sends request to all nodes  │
+│ "What time is it on your clock?"        │
+└─────────────────────────────────────────┘
+        │     │     │     │     │
+        ▼     ▼     ▼     ▼     ▼
+      Node1 Node2 Node3 Node4 Node5
+
+Step 2: RESPONSE (Nodes reply with times)
+      Node1 Node2 Node3 Node4 Node5
+        │     │     │     │     │
+        ├─────┴─────┴─────┴─────┘
+        │ (with network delay estimates)
+        ▼
+┌─────────────────────────────────────┐
+│ Coordinator collects all responses  │
+└─────────────────────────────────────┘
+
+Step 3: CALCULATE (Coordinator computes average offset)
+┌─────────────────────────────────────┐
+│ times = [2.3, 0.5, -1.2, 1.8, -0.1] │
+│ average = (2.3+0.5-1.2+1.8-0.1)/5   │
+│ average = 0.66 seconds              │
+│ offsets = average - times           │
+└─────────────────────────────────────┘
+
+Step 4: DISTRIBUTE (Send adjustments to all nodes)
+┌─────────────────────────────────────┐
+│ "Adjust your clock by offset"       │
+└─────────────────────────────────────┘
+        │     │     │     │     │
+        ▼     ▼     ▼     ▼     ▼
+      Node1 Node2 Node3 Node4 Node5
+      
+Adjust:+0.36 +0.16 +1.86 -1.14 +0.76
+```
+
+---
+
+### 3. **Understanding Network Delays**
+
+#### **Symmetric Delay Assumption**
+
+**In Berkeley Algorithm**:
+```
+Network Packet Journey:
+Coordinator ──[Delay D]──► Node
+           ◄──[Delay D]────
+(Assumes same delay in both directions)
+
+Actual Time Calculation:
+- Coordinator sends request at time T0
+- Node receives at T0 + D
+- Node replies immediately with its clock time C
+- Coordinator receives at T0 + 2D
+- Delay estimate: (T0 + 2D - T0) / 2 = D
+- Adjusted node time: C + D/2 (accounts for incoming delay)
+```
+
+**Why Adjust by D/2?**
+```
+Node's clock shows: C
+But it's actually at time: C + D/2 (relative to coordinator)
+                                ↑
+                    Account for message travel time
+```
+
+#### **Example with Real Numbers**
+
+```
+Scenario: Coordinator clock = 100.0 seconds
+
+Node 1:
+  - Clock shows: 102.0
+  - Network delay: 0.2 seconds
+  - Adjusted time: 102.0 + 0.1 = 102.1
+  - Offset from coordinator: 102.1 - 100.0 = +2.1
+
+Node 2:
+  - Clock shows: 98.5
+  - Network delay: 0.3 seconds
+  - Adjusted time: 98.5 + 0.15 = 98.65
+  - Offset from coordinator: 98.65 - 100.0 = -1.35
+
+Node 3:
+  - Clock shows: 101.2
+  - Network delay: 0.25 seconds
+  - Adjusted time: 101.2 + 0.125 = 101.325
+  - Offset from coordinator: 101.325 - 100.0 = +1.325
+
+Coordinator:
+  - Clock shows: 100.0
+  - Offset: 0.0
+
+Average offset: (2.1 - 1.35 + 1.325 + 0.0) / 4 = 0.519
+
+Adjustments:
+  Node 1: 0.519 - 2.1 = -1.581 seconds (move back)
+  Node 2: 0.519 - (-1.35) = +1.869 seconds (move forward)
+  Node 3: 0.519 - 1.325 = -0.806 seconds (move back)
+  Coordinator: 0.519 - 0.0 = +0.519 seconds (move forward)
+
+Final times (after adjustment):
+  Node 1: 102.0 - 1.581 = 100.419
+  Node 2: 98.5 + 1.869 = 100.369
+  Node 3: 101.2 - 0.806 = 100.394
+  Coordinator: 100.0 + 0.519 = 100.519
+  
+All synchronized to ~100.4 seconds! ✓
+```
+
+---
+
+### 4. **Berkeley vs Other Synchronization Algorithms**
+
+#### **A. Berkeley Algorithm vs NTP (Network Time Protocol)**
+
+| Aspect | Berkeley | NTP |
+|--------|----------|-----|
+| **Approach** | Centralized (coordinator) | Hierarchical (stratum levels) |
+| **Time Source** | Internal to network | External (atomic clock) |
+| **Accuracy** | 1-10 milliseconds | Microseconds (stratum 1) |
+| **Scalability** | 100s of nodes | Millions of nodes |
+| **Fault Tolerance** | Moderate (coordinator failure) | High (hierarchical) |
+| **Purpose** | Internal sync | External sync (UTC) |
+| **Implementation** | Simple | Complex |
+
+#### **B. Berkeley vs Cristian's Algorithm**
+
+| Aspect | Berkeley | Cristian's |
+|--------|----------|-----------|
+| **Model** | Broadcast model | Client-server model |
+| **Communication** | One-to-many | One-to-one |
+| **Delay Handling** | Symmetric assumption | Measures round-trip |
+| **Synchronization** | Average of all clocks | Time server + client |
+| **Fault Tolerance** | Voting on multiple servers | Depends on server |
+
+#### **C. Berkeley vs Lamport Clocks**
+
+| Aspect | Berkeley | Lamport |
+|--------|----------|---------|
+| **Type** | Physical clock sync | Logical clock |
+| **Purpose** | Actual time sync | Event ordering |
+| **Accuracy** | Milliseconds | No absolute time |
+| **Memory** | Minimal | One counter per node |
+| **When Needed** | Absolute time critical | Causality critical |
+
+---
+
+### 5. **Fault Tolerance in Berkeley Algorithm**
+
+#### **Types of Faults**
+
+**1. Faulty Clocks (Drift)**
+```
+Problem: Clock running too fast or too slow
+┌────────────────────────────────┐
+│ Faulty clock diverges from     │
+│ synchronized clocks            │
+│                                │
+│ Solution: Detect via algorithm │
+└────────────────────────────────┘
+
+Detection:
+- If offset is > 3× standard deviation: Faulty
+- Remove outlier from calculation
+- Recalculate average without outlier
+```
+
+**2. Faulty Coordinator**
+```
+Problem: Coordinator sends wrong adjustment
+Solution: 
+- Multiple coordinators (backup)
+- Consensus before applying adjustment
+- Timeout-based failover
+```
+
+**3. Byzantine Faults (Malicious)**
+```
+Problem: Node deliberately sends wrong time
+Solution:
+- Modified Berkeley (Modified Byzantine Fault Tolerant)
+- Requires 3f+1 nodes to tolerate f Byzantine nodes
+- Use median instead of average
+- Multi-round synchronization
+```
+
+---
+
+### 6. **Synchronization Accuracy Bounds**
+
+#### **Factors Affecting Accuracy**
+
+```
+Final Accuracy = Function(
+    Clock crystal stability,      ← ~15 ppm drift
+    Number of nodes,              ← More nodes = better
+    Network delay variance,       ← Symmetric delay assumption
+    Synchronization frequency     ← How often sync
+)
+```
+
+#### **Theoretical Bounds**
+
+```
+In ideal conditions:
+├─ Each clock can drift: ±15 ppm
+├─ Over 60 seconds between syncs: ±900 μs drift
+├─ Network delay uncertainty: ±10-100 ms
+└─ Typical accuracy achieved: ±1-10 ms
+
+In real networks:
+├─ Jitter and packet loss: increase uncertainty
+├─ Large numbers of nodes: reduce averaging benefit
+├─ Unequal network delays: break symmetric assumption
+└─ Typical accuracy: ±100 ms
+```
+
+---
+
+### 7. **Scalability and Complexity**
+
+#### **Message Complexity**
+```
+Berkeley Algorithm Message Count:
+├─ Round 1: Coordinator sends requests to n-1 nodes
+│           (n-1 messages)
+├─ Round 2: Nodes reply to coordinator
+│           (n-1 messages)
+└─ Round 3: Coordinator sends adjustments to n-1 nodes
+            (n-1 messages)
+
+Total: 3(n-1) = O(n) messages
+
+For 1000 nodes: 2997 messages per sync cycle
+```
+
+#### **Time Complexity**
+```
+Berkeley Algorithm Time:
+├─ Parallel communication: O(log n) rounds
+│  (with pipelined messages)
+├─ Coordinator calculation: O(n) computation
+└─ Total: O(n) dominated by communication
+
+With hierarchical Berkeley:
+├─ Multiple coordinators per region
+├─ Synchronize regions: O(log n)
+├─ Synchronize nodes within region: O(log n)
+└─ Total: O(log n) hierarchical depth
+```
+
+---
+
+## 💻 CODE WALKTHROUGH: 4_Berkeley
+
+### **Complete Program: berkley.py**
+
+```python
+import random
+
+# Simulating network nodes with their clock times (in seconds)
+class Node:
+    def __init__(self, node_id, clock_time):
+        self.node_id = node_id
+        self.clock_time = clock_time
+
+    def get_time(self):
+        return self.clock_time
+
+    def adjust_time(self, offset):
+        self.clock_time += offset
+
+    def __repr__(self):
+        return f"Node {self.node_id}: {self.clock_time:.2f} sec"
+
+
+class Coordinator(Node):
+    def synchronize_clocks(self, nodes):
+        print("Polling times from all nodes...")
+        times = {}
+
+        # Step 1: Collect time differences
+        for node in nodes:
+            if node.node_id == self.node_id:
+                continue
+            # Simulate network delay
+            delay = random.uniform(0.1, 0.5)
+            node_time = node.get_time() + delay / 2  # assume symmetric delay
+            times[node.node_id] = node_time - self.clock_time
+            print(f"Node {node.node_id} time: {node.get_time():.2f}, adjusted for delay: {node_time:.2f}")
+
+        # Add coordinator itself
+        times[self.node_id] = 0.0
+
+        # Step 2: Compute average offset (excluding outliers if needed)
+        average_offset = sum(times.values()) / len(times)
+        print(f"\nCalculated average offset: {average_offset:.2f} seconds")
+
+        # Step 3: Send adjustment to each node
+        for node in nodes:
+            offset = average_offset - times[node.node_id]
+            node.adjust_time(offset)
+            print(f"Adjusting Node {node.node_id} by {offset:+.2f} seconds")
+
+        print("\nSynchronization complete.\n")
+
+
+# --- Example usage ---
+if __name__ == "__main__":
+    # Create nodes with different clock times
+    nodes = [
+        Coordinator(0, 100.0),   # Coordinator
+        Node(1, 102.0),
+        Node(2, 98.5),
+        Node(3, 101.2),
+        Node(4, 99.8),
+    ]
+
+    print("Initial times:")
+    for node in nodes:
+        print(node)
+
+    coordinator = nodes[0]
+    coordinator.synchronize_clocks(nodes)
+
+    print("Final times after synchronization:")
+    for node in nodes:
+        print(node)
+```
+
+---
+
+### **STEP-BY-STEP CODE EXPLANATION**
+
+#### **Part 1: Node Class**
+
+```python
+class Node:
+    def __init__(self, node_id, clock_time):
+        self.node_id = node_id
+        self.clock_time = clock_time
+```
+
+**Constructor Parameters**:
+- `node_id`: Unique identifier (0-4 in example)
+- `clock_time`: Current time on this node's clock (in seconds)
+
+**Purpose**: Represents a node in distributed system with its own clock
+
+**Example**:
+```python
+node1 = Node(1, 102.0)
+# Creates node with ID=1, clock shows 102.0 seconds
+```
+
+---
+
+#### **Part 2: Node Methods**
+
+**Method 1: get_time()**
+```python
+def get_time(self):
+    return self.clock_time
+```
+
+**Purpose**: Return current clock value
+**Usage**: Coordinator calls this to collect all clock values
+
+```python
+time = node.get_time()  # Returns 102.0
+```
+
+---
+
+**Method 2: adjust_time()**
+```python
+def adjust_time(self, offset):
+    self.clock_time += offset
+```
+
+**Purpose**: Adjust clock by adding offset
+
+**Example**:
+```python
+node.clock_time = 102.0
+node.adjust_time(-1.581)
+# Result: node.clock_time = 100.419
+```
+
+---
+
+**Method 3: __repr__()**
+```python
+def __repr__(self):
+    return f"Node {self.node_id}: {self.clock_time:.2f} sec"
+```
+
+**Purpose**: String representation for printing
+
+**Output**:
+```
+Node 1: 102.00 sec
+Node 2: 98.50 sec
+```
+
+---
+
+#### **Part 3: Coordinator Class**
+
+```python
+class Coordinator(Node):
+    def synchronize_clocks(self, nodes):
+        # Implementation
+```
+
+**Purpose**: Inherits from Node, adds synchronization capability
+
+**Key Method: synchronize_clocks()**
+
+---
+
+### **SYNCHRONIZATION ALGORITHM - Detailed Execution**
+
+#### **Step 1: Initialization**
+
+```python
+print("Polling times from all nodes...")
+times = {}
+```
+
+**State**:
+- `times = {}`: Empty dictionary to store offsets
+- All 5 nodes have different clock values:
+  - Node 0 (Coordinator): 100.0
+  - Node 1: 102.0
+  - Node 2: 98.5
+  - Node 3: 101.2
+  - Node 4: 99.8
+
+**Timeline**:
+```
+Before sync:
+Coordinator: 100.0s ────────────────────
+Node 1:      102.0s ────────────────────
+Node 2:       98.5s ────────────────────
+Node 3:      101.2s ────────────────────
+Node 4:       99.8s ────────────────────
+
+Clock skew: ±2 seconds!
+```
+
+---
+
+#### **Step 2: Collect Time Differences (REQUEST & RESPONSE)**
+
+```python
+for node in nodes:
+    if node.node_id == self.node_id:
+        continue
+    # Simulate network delay
+    delay = random.uniform(0.1, 0.5)
+    node_time = node.get_time() + delay / 2
+    times[node.node_id] = node_time - self.clock_time
+    print(f"Node {node.node_id} time: {node.get_time():.2f}, adjusted for delay: {node_time:.2f}")
+```
+
+**Execution Flow** (Assuming random delays):
+
+**Iteration 1: Node 1**
+```
+delay = random.uniform(0.1, 0.5)  # Example: 0.3
+node_time = 102.0 + 0.3/2 = 102.15
+times[1] = 102.15 - 100.0 = +2.15
+
+Output: "Node 1 time: 102.00, adjusted for delay: 102.15"
+```
+
+**Why Adjust by delay/2?**
+```
+Timeline of communication:
+Coordinator ──[0.15s]──► Node 1      (node receives)
+                        (processes)
+                        ◄──[0.15s]─── (sends response)
+                Coordinator
+
+Total round-trip: 0.3s
+One way: 0.15s
+
+Node's clock reading: 102.0
+But relative to coordinator time: 102.0 + 0.15 = 102.15
+(Accounts for network delay of reaching here)
+```
+
+**Iteration 2: Node 2**
+```
+delay = random.uniform(0.1, 0.5)  # Example: 0.25
+node_time = 98.5 + 0.25/2 = 98.625
+times[2] = 98.625 - 100.0 = -1.375
+```
+
+**Iteration 3: Node 3**
+```
+delay = random.uniform(0.1, 0.5)  # Example: 0.35
+node_time = 101.2 + 0.35/2 = 101.375
+times[3] = 101.375 - 100.0 = +1.375
+```
+
+**Iteration 4: Node 4**
+```
+delay = random.uniform(0.1, 0.5)  # Example: 0.2
+node_time = 99.8 + 0.2/2 = 99.9
+times[4] = 99.9 - 100.0 = -0.1
+```
+
+**Skip Coordinator**:
+```python
+if node.node_id == self.node_id:
+    continue
+# Skip when node_id == 0 (coordinator)
+# (We add coordinator manually later)
+```
+
+**State After Collection**:
+```python
+times = {
+    1: +2.15,    # Node 1 is ahead
+    2: -1.375,   # Node 2 is behind
+    3: +1.375,   # Node 3 is ahead
+    4: -0.1,     # Node 4 is slightly behind
+}
+```
+
+---
+
+#### **Step 3: Add Coordinator to Times**
+
+```python
+# Add coordinator itself
+times[self.node_id] = 0.0
+```
+
+**Logic**:
+```
+Coordinator clock offset from itself: 0.0 (by definition)
+```
+
+**State After Addition**:
+```python
+times = {
+    0: 0.0,      # Coordinator (reference)
+    1: +2.15,
+    2: -1.375,
+    3: +1.375,
+    4: -0.1,
+}
+```
+
+---
+
+#### **Step 4: Calculate Average Offset**
+
+```python
+average_offset = sum(times.values()) / len(times)
+print(f"\nCalculated average offset: {average_offset:.2f} seconds")
+```
+
+**Calculation**:
+```python
+sum(times.values()) = 0.0 + 2.15 + (-1.375) + 1.375 + (-0.1)
+                    = 2.05
+
+len(times) = 5
+
+average_offset = 2.05 / 5 = 0.41 seconds
+```
+
+**Interpretation**:
+```
+On average, all nodes are 0.41 seconds behind "true time"
+(which is the coordinator's time)
+
+Alternative view:
+We should move all clocks forward by 0.41 seconds
+on average to synchronize them
+```
+
+**Output**:
+```
+Calculated average offset: 0.41 seconds
+```
+
+---
+
+#### **Step 5: Calculate and Send Individual Adjustments**
+
+```python
+for node in nodes:
+    offset = average_offset - times[node.node_id]
+    node.adjust_time(offset)
+    print(f"Adjusting Node {node.node_id} by {offset:+.2f} seconds")
+```
+
+**Adjustment Calculation**:
+
+For each node:
+```
+adjustment = average_offset - (node's offset from coordinator)
+```
+
+**Why This Formula?**
+
+```
+Example for Node 1:
+- Node 1 is +2.15 seconds ahead
+- Average should be +0.41 seconds ahead
+- So Node 1 needs to go back by: 0.41 - 2.15 = -1.74 seconds
+
+After adjustment:
+Node 1: 102.0 - 1.74 = 100.26 seconds ✓
+```
+
+---
+
+**Node 0 (Coordinator)**:
+```python
+offset = 0.41 - 0.0 = +0.41
+coordinator.adjust_time(+0.41)
+# New time: 100.0 + 0.41 = 100.41
+```
+
+**Node 1**:
+```python
+offset = 0.41 - 2.15 = -1.74
+node1.adjust_time(-1.74)
+# New time: 102.0 - 1.74 = 100.26
+```
+
+**Node 2**:
+```python
+offset = 0.41 - (-1.375) = +1.785
+node2.adjust_time(+1.785)
+# New time: 98.5 + 1.785 = 100.285
+```
+
+**Node 3**:
+```python
+offset = 0.41 - 1.375 = -0.965
+node3.adjust_time(-0.965)
+# New time: 101.2 - 0.965 = 100.235
+```
+
+**Node 4**:
+```python
+offset = 0.41 - (-0.1) = +0.51
+node4.adjust_time(+0.51)
+# New time: 99.8 + 0.51 = 100.31
+```
+
+**Output**:
+```
+Adjusting Node 0 by +0.41 seconds
+Adjusting Node 1 by -1.74 seconds
+Adjusting Node 2 by +1.79 seconds
+Adjusting Node 3 by -0.97 seconds
+Adjusting Node 4 by +0.51 seconds
+```
+
+---
+
+#### **Step 6: Final State**
+
+After synchronization:
+```python
+times:
+Node 0: 100.41 seconds
+Node 1: 100.26 seconds
+Node 2: 100.29 seconds
+Node 3: 100.24 seconds
+Node 4: 100.31 seconds
+
+Maximum difference: 100.41 - 100.24 = 0.17 seconds
+(Much better than original 2+ seconds!)
+```
+
+**Convergence**:
+```
+Before:  ┌──────────────────────────┐
+         │ Node spread: 2+ seconds  │
+         └──────────────────────────┘
+         
+After:   ┌─────┐
+         │ ~0.17s spread
+         └─────┘
+         
+Improvement: 10-12x better synchronization!
+```
+
+---
+
+### **COMPLETE EXECUTION WALKTHROUGH**
+
+#### **Scenario: 5 Node System**
+
+```
+Initial State:
+┌──────┬──────┬──────┬──────┬──────┐
+│ Node0│ Node1│ Node2│ Node3│ Node4│
+│ 100.0│ 102.0│ 98.5 │ 101.2│ 99.8 │
+└──────┴──────┴──────┴──────┴──────┘
+  ^      +2.0   -1.5  +1.2   -0.2
+
+(+ = ahead, - = behind)
+```
+
+**Synchronization Steps**:
+
+```
+Step 1: Coordinator (Node 0) sends REQUEST
+        "Poll: What time is it?"
+           │     │     │     │
+           ▼     ▼     ▼     ▼
+        Node1 Node2 Node3 Node4
+
+Step 2: Nodes send RESPONSE
+        102.0  98.5  101.2  99.8
+           │     │     │     │
+           └─────┴─────┴─────┘
+               │
+               ▼
+        Coordinator collects
+
+Step 3: Coordinator CALCULATES
+        Offsets: [+2.15, -1.375, +1.375, -0.1, 0.0]
+        Average: +0.41
+        
+Step 4: Coordinator SENDS ADJUSTMENTS
+        ┌─────────────────────┐
+        │ Adjust each node by │
+        │ (avg - its_offset)  │
+        └─────────────────────┘
+           │      │      │      │
+           ▼      ▼      ▼      ▼
+        -1.74  +1.79  -0.97  +0.51
+
+Step 5: All nodes adjust their clocks
+        100.26 100.29 100.24 100.31 100.41
+        └──────┴──────┴──────┴──────┴──────┘
+           All synchronized to ~100.3 seconds
+```
+
+---
+
+## 🔄 BERKELEY ALGORITHM LIFECYCLE
+
+### **Normal Operation Cycle**
+
+```
+┌──────────────────────────────────────────────────┐
+│        Berkeley Algorithm Synchronization         │
+├──────────────────────────────────────────────────┤
+│                                                  │
+│  ┌─── Every 30 seconds (configurable) ────┐    │
+│  │                                         │    │
+│  1. Coordinator initiated                  │    │
+│     (or elected if using leader election)  │    │
+│     │                                      │    │
+│  2. Coordinator broadcasts REQUEST         │    │
+│     to all nodes (sends timestamps)        │    │
+│     │                                      │    │
+│  3. Each node responds with:                │    │
+│     - Current clock time                   │    │
+│     - Estimated network delay              │    │
+│     │                                      │    │
+│  4. Coordinator receives all responses     │    │
+│     (or times out after waiting)           │    │
+│     │                                      │    │
+│  5. Coordinator calculates:                 │    │
+│     a) Filter outliers (optional)          │    │
+│     b) Compute average offset              │    │
+│     │                                      │    │
+│  6. Coordinator sends adjustments          │    │
+│     (individual offset for each node)      │    │
+│     │                                      │    │
+│  7. Each node adjusts its clock            │    │
+│     by received offset                     │    │
+│     │                                      │    │
+│  8. System synchronized ✓                  │    │
+│     │                                      │    │
+│  └──── Return to step 1 after delay ────┘    │
+│                                                  │
+└──────────────────────────────────────────────────┘
+```
+
+---
+
+## 🛡️ HANDLING FAILURES
+
+### **Scenario 1: Node Fails During Synchronization**
+
+```
+Coordinator sends REQUEST to 5 nodes
+Node1: Responds ✓
+Node2: Responds ✓
+Node3: No response (TIMEOUT)
+Node4: Responds ✓
+Node5: Responds ✓
+
+Solution:
+├─ Wait for timeout (e.g., 1 second)
+├─ Calculate average with received 4 nodes
+├─ Ignore missing Node3
+└─ Continue synchronization (4/5 is sufficient)
+```
+
+### **Scenario 2: Coordinator Fails**
+
+```
+Coordinator crashes/hangs
+
+Solutions:
+
+Option 1: Static Failover
+├─ Pre-designated backup coordinator
+├─ If primary unresponsive, activate backup
+└─ Simple but requires manual config
+
+Option 2: Leader Election
+├─ Use Bully or Ring algorithm
+├─ Dynamically elect new coordinator
+└─ Automatic, but adds complexity
+
+Option 3: Distributed Coordination
+├─ Multiple coordinators
+├─ Consensus-based adjustments
+└─ Byzantine-fault-tolerant
+```
+
+### **Scenario 3: Faulty Clock in Node**
+
+```
+Problem: One node's clock runs very fast
+         (drifts at 10x normal rate)
+
+Before sync:
+Node1: 102.0
+Node2: 98.5
+Node3: 150.0  ← OUTLIER!
+Node4: 99.8
+
+Solution (Option 1): Median instead of Mean
+├─ Sort offsets
+├─ Take middle value
+└─ Outlier has less influence
+
+Solution (Option 2): Statistical Outlier Detection
+├─ Calculate standard deviation
+├─ Remove values > 3σ from mean
+├─ Recalculate without outliers
+
+Solution (Option 3): Voting
+├─ Require majority agreement
+├─ Exclude minority outliers
+└─ Fault tolerance: tolerates f faulty clocks if n > 3f
+```
+
+---
+
+## 📊 BERKELEY ALGORITHM PROPERTIES
+
+### **Correctness**
+```
+✓ All nodes converge to same time (within acceptable bound)
+✓ Average is optimal for symmetric delay model
+✓ Works with any number of nodes
+```
+
+### **Fault Tolerance**
+```
+✓ Can tolerate f faulty clocks if:
+  - Using median: f < n/2
+  - Using mean with outlier removal: f < 3n/10
+  
+✗ Cannot tolerate:
+  - Coordinator failure (need failover)
+  - Byzantine (malicious) nodes without modifications
+```
+
+### **Complexity**
+```
+Message Complexity: O(n)
+  ├─ Requests: n-1
+  ├─ Responses: n-1
+  └─ Adjustments: n-1
+  └─ Total: 3(n-1) messages
+
+Time Complexity: O(log n)
+  └─ Can be pipelined/parallelized
+
+Space Complexity: O(n)
+  └─ Store all node times
+```
+
+### **Convergence**
+```
+Convergence Speed: Linear in synchronization frequency
+  ├─ More frequent sync: tighter accuracy
+  ├─ Less frequent sync: wider clock skew
+  └─ Typical: every 10-60 seconds
+
+Steady State:
+  └─ All clocks within ±10ms of each other
+     (in good network conditions)
+```
+
+---
+
+## 💡 PRACTICAL CONSIDERATIONS
+
+### **When to Use Berkeley Algorithm**
+✅ Internal cluster synchronization (not UTC)
+✅ Small to medium networks (< 1000 nodes)
+✅ Relatively stable networks
+✅ Systems can tolerate brief desynchronization
+✅ Don't need external time reference
+
+### **When NOT to Use Berkeley Algorithm**
+❌ Absolute time required (use NTP)
+❌ Very large networks (use hierarchical)
+❌ Highly unreliable networks
+❌ Byzantine-fault scenarios
+❌ Real-time systems (use atomic clocks)
+
+### **Optimization Strategies**
+```
+1. Hierarchical Berkeley
+   ├─ Divide nodes into groups
+   ├─ Each group synchronized independently
+   └─ Groups synchronized to master
+
+2. Adaptive Synchronization
+   ├─ Sync frequency based on measured drift
+   ├─ More sync when clocks drift apart
+   └─ Less sync when clocks stay together
+
+3. Predicted Correction
+   ├─ Predict future drift
+   ├─ Apply preventive adjustment
+   └─ Reduce frequency of full synchronization
+
+4. Hybrid Approach
+   ├─ Berkeley for internal sync
+   ├─ Occasional NTP for external sync
+   └─ Combined accuracy/simplicity benefit
+```
+
+---
+
+## 📝 PRACTICE QUESTIONS
+
+1. Why does Berkeley Algorithm use average instead of majority voting?
+2. What happens if the coordinator's clock is the most faulty?
+3. Design a Byzantine-fault-tolerant version of Berkeley.
+4. How would you synchronize clocks across multiple data centers?
+5. Calculate convergence time with 10000 nodes.
+6. How to handle asymmetric network delays?
+7. Design Berkeley Algorithm for mobile/ad-hoc networks.
+8. Compare Berkeley with GPS-based synchronization.
+9. Implement outlier detection for Berkeley.
+10. Design a hybrid Berkeley + Lamport clock system.
+
+---
+
+## 📚 EXECUTION EXAMPLE
+
+```bash
+# Run the Berkeley Clock Synchronization
+cd "e:\DISTRIBUTED SYSTEMS\FINAL\4_berkley"
+
+python berkley.py
+
+# Expected Output:
+# Initial times:
+# Node 0: 100.00 sec
+# Node 1: 102.00 sec
+# Node 2: 98.50 sec
+# Node 3: 101.20 sec
+# Node 4: 99.80 sec
+#
+# Polling times from all nodes...
+# Node 1 time: 102.00, adjusted for delay: 102.15
+# Node 2 time: 98.50, adjusted for delay: 98.62
+# Node 3 time: 101.20, adjusted for delay: 101.37
+# Node 4 time: 99.80, adjusted for delay: 99.90
+#
+# Calculated average offset: 0.41 seconds
+#
+# Adjusting Node 0 by +0.41 seconds
+# Adjusting Node 1 by -1.74 seconds
+# Adjusting Node 2 by +1.79 seconds
+# Adjusting Node 3 by -0.97 seconds
+# Adjusting Node 4 by +0.51 seconds
+#
+# Synchronization complete.
+#
+# Final times after synchronization:
+# Node 0: 100.41 sec
+# Node 1: 100.26 sec
+# Node 2: 100.29 sec
+# Node 3: 100.24 sec
+# Node 4: 100.31 sec
+```
+
+---
+
+## 🎯 KEY TAKEAWAYS
+
+1. **Berkeley Algorithm synchronizes clocks through averaging**
+   - Coordinator collects all times
+   - Calculates average offset
+   - Sends individual adjustments
+
+2. **Network delay must be estimated**
+   - Symmetric delay assumption
+   - Half of round-trip time
+   - Accounts for message travel
+
+3. **Fault tolerance through statistical methods**
+   - Outlier detection
+   - Voting/consensus
+   - Graceful degradation
+
+4. **Scalability is O(n) messages**
+   - Linear in number of nodes
+   - Practical for moderate sizes
+   - Hierarchical for large systems
+
+5. **Convergence is guaranteed**
+   - All clocks move toward average
+   - Synchronization improves each cycle
+   - Steady state achieved
+
+---
+
+**Document Version**: 1.0  
+**Last Updated**: May 6, 2026  
+**Practical**: 4_Berkeley - Clock Synchronization in Distributed Systems
+
+'''
