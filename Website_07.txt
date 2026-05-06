@@ -1,0 +1,503 @@
+#!/usr/bin/env python3
+"""
+Assignment 07: Simple Web Service + Distributed Consumer (single-file version)
+
+This file supports two modes:
+1) server  -> exposes HTTP web service endpoints
+2) client  -> consumes the web service in parallel (distributed-style workload)
+
+Why single file?
+- Minimal resources
+- Minimal number of files
+- Easy to run in class/demo
+"""
+
+import argparse
+import json
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.error import URLError, HTTPError
+from urllib.parse import parse_qs, urlparse
+from urllib.request import urlopen
+
+
+DEFAULT_HOST = "127.0.0.1"
+DEFAULT_PORT = 8080
+
+
+class MathServiceHandler(BaseHTTPRequestHandler):
+    """Simple stateless web service implemented with Python standard library."""
+
+    # Silence default noisy logs; keeps output clean for lab demos.
+    def log_message(self, fmt, *args):
+        return
+
+    def _send_json(self, status_code, payload):
+        body = json.dumps(payload).encode("utf-8")
+        self.send_response(status_code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self):
+        parsed = urlparse(self.path)
+        path = parsed.path
+        query = parse_qs(parsed.query)
+
+        # Health endpoint helps with service discovery and readiness checks.
+        if path == "/health":
+            self._send_json(
+                200,
+                {
+                    "status": "ok",
+                    "service": "MathService",
+                    "timestamp": time.time(),
+                },
+            )
+            return
+
+        # Core service endpoint: /add?a=10&b=20
+        if path == "/add":
+            try:
+                a = float(query.get("a", [None])[0])
+                b = float(query.get("b", [None])[0])
+            except (TypeError, ValueError):
+                self._send_json(
+                    400,
+                    {
+                        "error": "Invalid input. Use numeric query params a and b.",
+                        "example": "/add?a=10&b=20",
+                    },
+                )
+                return
+
+            self._send_json(
+                200,
+                {
+                    "operation": "add",
+                    "a": a,
+                    "b": b,
+                    "result": a + b,
+                    "server_time": time.time(),
+                },
+            )
+            return
+
+        self._send_json(
+            404,
+            {
+                "error": "Not found",
+                "endpoints": ["/health", "/add?a=10&b=20"],
+            },
+        )
+
+
+def run_server(host, port):
+    # ThreadingHTTPServer allows concurrent request handling with very low setup.
+    server = ThreadingHTTPServer((host, port), MathServiceHandler)
+    print(f"[SERVICE] Running on http://{host}:{port}")
+    print("[SERVICE] Endpoints: /health , /add?a=10&b=20")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\n[SERVICE] Stopping service...")
+    finally:
+        server.server_close()
+
+
+def fetch_json(url, timeout=2.0, retries=2):
+    """Consumer helper with retry logic (basic fault tolerance demonstration)."""
+    last_error = None
+    for _ in range(retries + 1):
+        try:
+            with urlopen(url, timeout=timeout) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except (URLError, HTTPError, TimeoutError, json.JSONDecodeError) as exc:
+            last_error = exc
+            time.sleep(0.2)
+    raise RuntimeError(f"Request failed for {url}: {last_error}")
+
+
+def run_client(base_url):
+    print(f"[CLIENT] Consuming service at {base_url}")
+
+    # Sample distributed task set (independent requests).
+    tasks = [(10, 5), (1.5, 2.25), (100, 250), (7, 13), (42, 58)]
+
+    # Parallel calls simulate distributed consumers hitting one service.
+    results = []
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        future_map = {
+            pool.submit(fetch_json, f"{base_url}/add?a={a}&b={b}"): (a, b)
+            for a, b in tasks
+        }
+
+        for future in as_completed(future_map):
+            a, b = future_map[future]
+            try:
+                payload = future.result()
+                results.append(payload["result"])
+                print(f"[CLIENT] {a} + {b} = {payload['result']}")
+            except Exception as exc:
+                print(f"[CLIENT] Request failed for ({a}, {b}): {exc}")
+
+    # Aggregation step represents consumer-side distributed result collection.
+    total = sum(results)
+    print(f"[CLIENT] Aggregated total of successful responses = {total}")
+
+
+def build_parser():
+    parser = argparse.ArgumentParser(
+        description="Assignment 07: Web Service + Distributed Consumer"
+    )
+    parser.add_argument(
+        "mode",
+        choices=["server", "client"],
+        help="Run as service provider or service consumer",
+    )
+    parser.add_argument("--host", default=DEFAULT_HOST, help="Host for server mode")
+    parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="Port for server mode")
+    parser.add_argument(
+        "--url",
+        default=f"http://{DEFAULT_HOST}:{DEFAULT_PORT}",
+        help="Base URL for client mode",
+    )
+    return parser
+
+
+def main():
+    args = build_parser().parse_args()
+    if args.mode == "server":
+        run_server(args.host, args.port)
+    else:
+        run_client(args.url)
+
+
+if __name__ == "__main__":
+    main()
+
+
+## python ass_07/app.py server --host 127.0.0.1 --port 8080
+##python ass_07/app.py client --url http://127.0.0.1:8080
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+
+This is a simple example of:
+
+a Web Service Provider (Server)
+and a Distributed Consumer (Client)
+
+communicating over a network using HTTP.
+
+Main Distributed Systems Concepts Used
+Concept	Meaning
+Client-Server Architecture	One machine provides services, another consumes them
+Web Service	A service accessible over network using HTTP
+Stateless Communication	Each request is independent
+Distributed Computing	Work is shared between multiple systems
+Parallel Processing	Multiple requests handled simultaneously
+Concurrency	Server can process many clients together
+Fault Tolerance	Retry mechanism handles temporary failures
+Service Discovery	/health endpoint checks if service is alive
+Request-Response Model	Client sends request, server returns response
+JSON Communication	Data exchanged in JSON format
+Overall Working
+Server Side
+
+The server:
+
+starts an HTTP service
+waits for client requests
+performs operations
+sends responses
+
+Example:
+
+Client → /add?a=10&b=20
+Server → Result = 30
+Client Side
+
+The client:
+
+sends multiple requests
+consumes the web service
+collects results
+aggregates final output
+
+This simulates distributed consumers using the same service.
+
+Why This Is a Distributed System
+
+Because:
+
+client and server run independently
+communication happens through network
+tasks are processed remotely
+multiple requests can happen simultaneously
+
+Even if running on same PC (localhost), conceptually they are separate systems.
+
+Why This Approach Is Useful
+1. Scalability
+
+Multiple clients can use same service.
+
+Example:
+
+mobile apps
+websites
+desktop apps
+
+all can use same API.
+
+2. Reusability
+
+One service can be reused by many systems.
+
+3. Modularity
+
+Server logic and client logic are separated.
+
+Easy to:
+
+update server
+change clients
+add new features
+4. Distributed Workload
+
+Tasks can be distributed among systems.
+
+5. Platform Independence
+
+HTTP + JSON works across:
+
+Python
+Java
+C++
+JavaScript
+Mobile apps
+Important Concepts in Code
+1. HTTP Web Service
+ThreadingHTTPServer
+
+Creates a web server.
+
+It listens for requests like:
+
+/add?a=10&b=20
+2. REST-like API
+
+Endpoints:
+
+/health
+/add
+
+These are URLs clients can access.
+
+3. JSON Communication
+json.dumps(payload)
+
+Converts Python data into JSON format.
+
+Example:
+
+{
+  "result": 30
+}
+4. Stateless Service
+
+Server does not remember previous requests.
+
+Every request is processed independently.
+
+This improves:
+
+scalability
+simplicity
+reliability
+5. Concurrency
+ThreadingHTTPServer
+
+Allows multiple clients simultaneously.
+
+Without threading:
+
+one request at a time only
+
+With threading:
+
+many requests together
+6. Parallel Client Execution
+ThreadPoolExecutor
+
+Used for parallel task execution.
+
+Client sends multiple requests simultaneously.
+
+This demonstrates:
+
+distributed consumers
+concurrent workload
+7. Fault Tolerance
+retries=2
+
+If request fails:
+
+client retries again
+
+This improves reliability in distributed systems.
+
+8. Service Discovery / Health Check
+/health
+
+Used to check whether service is running.
+
+Real systems use this heavily:
+
+Kubernetes
+Docker
+Microservices
+Beginner Theory You Must Know
+What is a Web Service?
+
+A software service accessible through network.
+
+Examples:
+
+weather API
+payment gateway
+login service
+What is Distributed Computing?
+
+When multiple systems cooperate over a network to complete tasks.
+
+What is a Consumer?
+
+The client that uses a service.
+
+What is a Provider?
+
+The server that provides service.
+
+What is an API?
+
+A set of endpoints/functions exposed for communication.
+
+Flow of Execution
+1. Start Server
+2. Server waits for requests
+3. Client sends request
+4. Server processes request
+5. Server returns JSON response
+6. Client collects results
+Why Threading Is Important
+
+Without threading:
+
+one slow client blocks everyone
+
+With threading:
+
+server handles multiple requests concurrently
+
+This is essential in distributed systems.
+
+Real-World Similar Examples
+Real System	Similarity
+Google Maps API	Web service
+Payment Gateway	Client-server communication
+Cloud APIs	Distributed service
+Microservices	Independent network services
+Banking APIs	JSON over HTTP
+'''
